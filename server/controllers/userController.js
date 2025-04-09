@@ -5,26 +5,28 @@ const axios = require('axios');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'default_secret'; // Use environment variables in production
 
-exports.registerUser = async (req, res) => {
+// Function to register a new user
+exports.registerUser  = async (req, res) => {
     const { username, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     const apiKey = jwt.sign({ username }, JWT_SECRET);
 
     try {
-        const userId = await UserDao.createUser(username, hashedPassword, apiKey);
-        res.status(201).json({ message: 'User registered successfully', apiKey });
+        const id = await UserDao.createUser (username, hashedPassword, apiKey);
+        res.status(201).json({ message: 'User  registered successfully' });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
 };
 
-exports.loginUser = async (req, res) => {
+// Function to log in a user
+exports.loginUser  = async (req, res) => {
     const { username, password } = req.body;
 
     try {
         const user = await UserDao.getUserByUsername(username);
         if (!user) {
-            return res.status(400).json({ error: 'User not found' });
+            return res.status(400).json({ error: 'User  not found' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
@@ -55,8 +57,8 @@ async function getCountryWithRetries(name, retries = 3) {
     }
 }
 
-// Controller function to handle the API request
-exports.getCountryByName = async (req, res) => {
+// Function to get country data
+exports.getCountryData = async (req, res) => {
     const { name } = req.params;
 
     if (!name || typeof name !== 'string' || name.trim() === '') {

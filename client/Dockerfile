@@ -1,13 +1,11 @@
-# frontend/Dockerfile
-
-# Use the official Node.js image for building the app
+# Use the official Node.js image for building the frontend
 FROM node:14 AS build
 
 # Set the working directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
 # Copy package.json and package-lock.json
-COPY package*.json ./
+COPY package.json package-lock.json ./
 
 # Install dependencies
 RUN npm install
@@ -21,11 +19,11 @@ RUN npm run build
 # Use a lightweight web server to serve the static files
 FROM nginx:alpine
 
-# Copy the build output to the Nginx HTML directory
-COPY --from=build /usr/src/app/build /usr/share/nginx/html
+# Copy the build output to the Nginx server
+COPY --from=build /app/build /usr/share/nginx/html
 
-# Expose the port the app runs on
-EXPOSE 3000
+# Expose port 80
+EXPOSE 80
 
-# Command to run Nginx
+# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
