@@ -12,8 +12,8 @@ exports.registerUser  = async (req, res) => {
     const apiKey = jwt.sign({ username }, JWT_SECRET);
 
     try {
-        const id = await UserDao.createUser (username, hashedPassword, apiKey);
-        res.status(201).json({ message: 'User  registered successfully' });
+        const userId = await UserDao.createUser (username, hashedPassword, apiKey);
+        res.status(201).json({ message: 'User  registered successfully', apiKey });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }

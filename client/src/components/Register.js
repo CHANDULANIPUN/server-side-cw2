@@ -16,21 +16,21 @@ const Register = () => {
         e.preventDefault();
         try {
             const response = await axios.post('http://localhost:5001/api/register', { username, password });
-            setMessage(`User  registered successfully! API Key: ${response.data.apiKey}`);
+            setMessage(response.data.message); 
         } catch (error) {
-            setMessage('Registration failed: ' + error.response.data.error);
+            setMessage('Registration failed: ' + (error.response?.data?.error || 'Unknown error'));
         }
     };
 
-    // Inline styles
+    
     const containerStyle = {
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'flex-start', // Align items to the top
+        justifyContent: 'flex-start',
         alignItems: 'center',
         minHeight: '100vh',
         backgroundColor: '#f2f2f2',
-        padding: '40px 20px', // Add top padding to move content down
+        padding: '40px 20px',
     };
 
     const formStyle = {
@@ -60,7 +60,6 @@ const Register = () => {
         lineHeight: '1.6',
         paddingBottom: '30px',
         textAlign: 'center',
-    
     };
 
     const h2Style = {
@@ -118,8 +117,7 @@ const Register = () => {
                     required
                     style={inputStyle}
                 />
-                <input
-                    type="password"
+                <input type="password"
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
