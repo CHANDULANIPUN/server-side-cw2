@@ -14,7 +14,7 @@ const Login = ({ setApiKey }) => {
             const response = await axios.post('http://localhost:5001/api/login', { username, password });
             setApiKey(response.data.apiKey);
             setMessage('Login successful!');
-            navigate('/country-data'); // Redirect to the CountryData page
+            navigate('/dashboard'); // Redirect to the CountryData page
         } catch (error) {
             setMessage('Login failed: ' + error.response.data.error);
         }

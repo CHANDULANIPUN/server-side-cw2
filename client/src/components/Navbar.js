@@ -31,13 +31,44 @@ const Navbar = () => {
         <nav style={navStyle}>
             <ul style={ulStyle}>
                 <li style={liStyle}>
-                    <Link to="/" style={linkStyle} onMouseOver={(e) => e.target.style.textDecoration = linkHoverStyle.textDecoration} onMouseOut={(e) => e.target.style.textDecoration = linkStyle.textDecoration}>Home</Link>
+                    <Link
+                        to="/"
+                        style={linkStyle}
+                        onMouseOver={(e) => e.target.style.textDecoration = linkHoverStyle.textDecoration}
+                        onMouseOut={(e) => e.target.style.textDecoration = linkStyle.textDecoration}
+                    >
+                        Home
+                    </Link>
                 </li>
                 <li style={liStyle}>
-                    <Link to="/login" style={linkStyle} onMouseOver={(e) => e.target.style.textDecoration = linkHoverStyle.textDecoration} onMouseOut={(e) => e.target.style.textDecoration = linkStyle.textDecoration}>Login</Link>
+                    <Link
+                        to="/login"
+                        style={linkStyle}
+                        onMouseOver={(e) => e.target.style.textDecoration = linkHoverStyle.textDecoration}
+                        onMouseOut={(e) => e.target.style.textDecoration = linkStyle.textDecoration}
+                    >
+                        Login
+                    </Link>
                 </li>
                 <li style={liStyle}>
-                    <Link to="/register" style={linkStyle} onMouseOver={(e) => e.target.style.textDecoration = linkHoverStyle.textDecoration} onMouseOut={(e) => e.target.style.textDecoration = linkStyle.textDecoration}>Register</Link>
+                    <Link
+                        to="/register"
+                        style={linkStyle}
+                        onMouseOver={(e) => e.target.style.textDecoration = linkHoverStyle.textDecoration}
+                        onMouseOut={(e) => e.target.style.textDecoration = linkStyle.textDecoration}
+                    >
+                        Register
+                    </Link>
+                </li>
+                <li style={liStyle}>
+                    <Link
+                        to="/api-key-manager"
+                        style={linkStyle}
+                        onMouseOver={(e) => e.target.style.textDecoration = linkHoverStyle.textDecoration}
+                        onMouseOut={(e) => e.target.style.textDecoration = linkStyle.textDecoration}
+                    >
+                        API Key Manager
+                    </Link>
                 </li>
             </ul>
         </nav>

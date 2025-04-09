@@ -1,27 +1,37 @@
+// controllers/userController.js
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const UserDao = require('../dao/userDao.js');
 const axios = require('axios');
+const UserDao = require('../dao/userDao');
+const { v4: uuidv4 } = require('uuid');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'default_secret'; // Use environment variables in production
 
-// Function to register a new user
+// Register User
 exports.registerUser  = async (req, res) => {
     const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Please add all fields' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const apiKey = jwt.sign({ username }, JWT_SECRET);
+    const apiKey = uuidv4(); // Generate a unique API key
 
     try {
-        const userId = await UserDao.createUser (username, hashedPassword, apiKey);
+        await UserDao.createUser (username, hashedPassword, apiKey);
         res.status(201).json({ message: 'User  registered successfully', apiKey });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
 };
-
-// Function to log in a user
+// Login User
 exports.loginUser  = async (req, res) => {
     const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Please add all fields' });
+    }
 
     try {
         const user = await UserDao.getUserByUsername(username);
@@ -36,10 +46,48 @@ exports.loginUser  = async (req, res) => {
 
         res.json({ apiKey: user.api_key });
     } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: error.message });
     }
 };
 
+
+exports.generateApiKey = async (req, res) => {
+    const { username } = req.body;
+
+    if (!username) {
+        return res.status(400).json({ error: 'Username is required' });
+    }
+
+    // Generate a unique identifier
+    const uniqueId = uuidv4();
+
+    // Include the unique identifier in the JWT payload
+    const newApiKey = jwt.sign({ username, uniqueId }, JWT_SECRET, { expiresIn: '30d' });
+
+    try {
+        await UserDao.updateApiKey(username, newApiKey);
+        res.json({ message: 'New API key generated', apiKey: newApiKey });
+    } catch (error) {
+        console.error('Error generating API key:', error);
+        res.status(500).json({ error: 'Failed to generate API key' });
+    }
+};
+// Revoke API Key
+exports.revokeApiKey = async (req, res) => {
+    const { username } = req.body;
+
+    if (!username) {
+        return res.status(400).json({ error: 'Username is required' });
+    }
+
+    try {
+        await UserDao.revokeApiKey(username);
+        res.json({ message: 'API key revoked successfully' });
+    } catch (error) {
+        console.error('Error revoking API key:', error);
+        res.status(500).json({ error: 'Failed to revoke API key' });
+    }
+};
 // Helper function to fetch country information with retries
 async function getCountryWithRetries(name, retries = 3) {
     for (let i = 0; i < retries; i++) {
