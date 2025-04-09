@@ -60,16 +60,6 @@ const Navbar = () => {
                         Register
                     </Link>
                 </li>
-                <li style={liStyle}>
-                    <Link
-                        to="/api-key-manager"
-                        style={linkStyle}
-                        onMouseOver={(e) => e.target.style.textDecoration = linkHoverStyle.textDecoration}
-                        onMouseOut={(e) => e.target.style.textDecoration = linkStyle.textDecoration}
-                    >
-                        API Key Manager
-                    </Link>
-                </li>
             </ul>
         </nav>
     );
