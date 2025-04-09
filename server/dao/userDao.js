@@ -32,11 +32,11 @@ class UserDao {
                 [username],
                 (err, row) => {
                     if (err) {
-                        // Log the error for internal tracking
+                    
                         console.error(`Database error: ${err.message}`);
                         return reject(new Error('Failed to fetch user by username'));
                     }
-                    resolve(row || null); // Explicitly return `null` if no user is found
+                    resolve(row || null); 
                 }
             );
         });
@@ -48,12 +48,12 @@ class UserDao {
             const sql = `UPDATE users SET api_key = ? WHERE username = ?`;
             db.run(sql, [newApiKey, username], function (err) {
                 if (err) {
-                    // Log the error for debugging purposes
+                    
                     console.error(`Failed to update API key for user ${username}: ${err.message}`);
                     return reject(new Error(`Failed to update API key: ${err.message}`));
                 }
 
-                // Check if any rows were updated
+               
                 if (this.changes === 0) {
                     return reject(new Error(`No user found with username: ${username}`));
                 }
