@@ -81,24 +81,6 @@ class UserDao {
             });
         });
     }
-
-
-    static updateApiKey(username, newApiKey) {
-        return new Promise((resolve, reject) => {
-            const sql = `UPDATE users SET api_key = ? WHERE username = ?`;
-            console.log('Executing SQL:', sql);
-            console.log('With values:', newApiKey, username);
-
-            db.run(sql, [newApiKey, username], function (err) {
-                if (err) {
-                    console.error('Error updating API key:', err);
-                    return reject(new Error(`Failed to update API key: ${err.message}`));
-                }
-                console.log('Rows updated:', this.changes);
-                resolve(this.changes);
-            });
-        });
-    }
 }
 
 

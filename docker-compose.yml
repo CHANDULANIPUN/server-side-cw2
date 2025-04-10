@@ -5,7 +5,7 @@ services:
     build:
       context: ./client
     ports:
-      - "3001:80"
+      - "3002:80"
     depends_on:
       - server
 
