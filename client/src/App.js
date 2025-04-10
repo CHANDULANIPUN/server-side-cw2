@@ -7,6 +7,8 @@ import Login from './components/Login';
 import CountryData from './components/countryData';
 import ApiKeyManager from './components/ApiKeyManager';
 import Dashboard from './components/Dashboard';
+import AdminLogin from './components/AdminLogin'; 
+import AdminDashboard from './components/AdminDashboard'; // Import the AdminDashboard component
 
 const App = () => {
     const [apiKey, setApiKey] = useState('');
@@ -20,8 +22,10 @@ const App = () => {
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login setApiKey={setApiKey} />} />
                     <Route path="/country-data" element={apiKey ? <CountryData apiKey={apiKey} /> : <p>Please log in to view country data.</p>} />
-                    <Route path="/api-key-manager" element={<ApiKeyManager />} />
+                    <Route path="/api-key-manager" element={apiKey ? <ApiKeyManager apiKey={apiKey} /> : <p>Please log in to manage your API key.</p>} />
                     <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/adminlogin" element={<AdminLogin setApiKey={setApiKey} />} />
+                    <Route path="/admin-dashboard" element={<AdminDashboard />} /> 
                 </Routes>
             </div>
         </Router>

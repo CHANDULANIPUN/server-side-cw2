@@ -1,29 +1,30 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
-const UserDao = require('../dao/userDao'); // Adjust the path to your UserDao file
+const UserDao = require('../dao/userDao');
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'default_secret'; 
 
 
 exports.registerUser  = async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, role } = req.body;
 
     if (!username || !password) {
         return res.status(400).json({ error: 'Please add all fields' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const apiKey = uuidv4(); 
+
     try {
-       const id = await UserDao.createUser (username, hashedPassword, apiKey);
-        res.status(201).json({ message: 'User  registered successfully', apiKey });
+        // Use the provided role or default to 'user' if not specified
+        const userId = await UserDao.createUser (username, hashedPassword, role || 'user');
+        res.status(201).json({ message: 'User  registered successfully', userId });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
 };
-
 exports.createAdminUser  = async (req, res) => {
     const { username, password } = req.body;
 
@@ -32,39 +33,114 @@ exports.createAdminUser  = async (req, res) => {
     }
 
     try {
+        // Check if the username already exists
+        const existingUser  = await UserDao.findUserByUsername(username);
+        if (existingUser ) {
+            return res.status(409).json({ error: 'Username already exists' });
+        }
+
+        // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUserId = await UserDao.createUser (username, hashedPassword, 'admin');
-        res.status(201).json({ message: 'Admin user created successfully', userId: newUserId });
+
+        // Generate a unique API key
+        const apiKey = crypto.randomBytes(16).toString('hex');
+
+        // Create the user with the role 'admin' and the generated API key
+        const newUserId = await UserDao.createUser (username, hashedPassword, 'admin', apiKey);
+
+        // Respond with the user details including the API key
+        res.status(201).json({
+            message: 'Admin user created successfully',
+            userId: newUserId,
+            username: username,
+            role: 'admin',
+            apiKey: apiKey
+        });
     } catch (error) {
         console.error('Error creating admin user:', error);
         res.status(500).json({ error: 'Failed to create admin user' });
     }
-};;
+};
 
 exports.loginUser  = async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-        return res.status(400).json({ error: 'Please add all fields' });
+        return res.status(400).json({ error: 'Username and password are required' });
     }
 
     try {
         const user = await UserDao.getUserByUsername(username);
+        console.log('Retrieved user:', user);
+
         if (!user) {
-            return res.status(400).json({ error: 'User  not found' });
+            return res.status(401).json({ error: 'Invalid username or password' });
         }
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ error: 'Invalid credentials' });
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        console.log('Password valid:', isPasswordValid);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Invalid username or password' });
         }
 
-        res.json({ apiKey: user.api_key });
+        // Generate a new API key
+        const apiKey = uuidv4();
+        console.log('Generated API key:', apiKey);
+
+        // Update the API key in the database
+        await UserDao.updateApiKey(user.username, apiKey);
+        console.log('API key updated for user:', user.username);
+
+        res.status(200).json({ message: 'Login successful', apiKey });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Error during login:', error);
+        res.status(500).json({ error: 'Failed to log in' });
     }
 };
 
+exports.adminlogin  = async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    try {
+        const user = await UserDao.getUserByUsername(username);
+        console.log('Retrieved user:', user);
+
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid username or password' });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        console.log('Password valid:', isPasswordValid);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Invalid username or password' });
+        }
+
+        // Check if user role is not admin
+        if (user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied: Admins only' });
+        }
+
+        // Generate a new API key
+        const apiKey = uuidv4();
+        console.log('Generated API key:', apiKey);
+
+        // Update the API key in the database
+        await UserDao.updateApiKey(user.username, apiKey);
+        console.log('API key updated for user:', user.username);
+
+        // Return success response with API key and role
+        res.status(200).json({ message: 'Login successful', apiKey, role: user.role });
+    } catch (error) {
+        console.error('Error during login:', error);
+        res.status(500).json({ error: 'Failed to log in' });
+    }
+};
 
 exports.generateApiKey = async (req, res) => {
     const { username } = req.body;
@@ -72,17 +148,19 @@ exports.generateApiKey = async (req, res) => {
     if (!username) {
         return res.status(400).json({ error: 'Username is required' });
     }
+
     const uniqueId = uuidv4();
     const newApiKey = jwt.sign({ username, uniqueId }, JWT_SECRET, { expiresIn: '30d' });
 
     try {
-        await UserDao.updateApiKey(username, newApiKey);
+        await UserDao.updateApiKey(username, newApiKey); // Ensure this method updates the user's API key in the database
         res.json({ message: 'New API key generated', apiKey: newApiKey });
     } catch (error) {
         console.error('Error generating API key:', error);
         res.status(500).json({ error: 'Failed to generate API key' });
     }
 };
+
 exports.revokeApiKey = async (req, res) => {
     const { username } = req.body;
 
@@ -91,7 +169,7 @@ exports.revokeApiKey = async (req, res) => {
     }
 
     try {
-        await UserDao.revokeApiKey(username);
+        await UserDao.revokeApiKey(username); // Ensure this method revokes the user's API key in the database
         res.json({ message: 'API key revoked successfully' });
     } catch (error) {
         console.error('Error revoking API key:', error);

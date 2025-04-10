@@ -1,24 +1,26 @@
 const UserDao = require('../dao/userDao');
 
-// Middleware to authenticate user
-const authenticate = async (req, res, next) => {
+
+async function authenticate(req, res, next) {
     const apiKey = req.headers['x-api-key'];
-    if (!apiKey) return res.status(403).json({ error: 'API key required' });
+
+    if (!apiKey) {
+        return res.status(401).json({ error: 'API key is required' });
+    }
 
     try {
         const user = await UserDao.getUserByApiKey(apiKey);
-        if (user) {
-            req.user = user; // Attach user info to request
-            next();
-        } else {
-            res.status(403).json({ error: 'Invalid API key' });
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid API key' });
         }
-    } catch (error) {
-        console.error('Error during authentication:', error);
-        res.status(500).json({ error: 'Authentication failed' });
-    }
-};
 
+        req.user = user; // Attach user to request object
+        next(); // Proceed to the next middleware or route handler
+    } catch (error) {
+        console.error('Authentication error:', error.message);
+        res.status(500).json({ error: 'Failed to authenticate' });
+    }
+}
 // Middleware to check if the user is an admin
 const isAdmin = async (req, res, next) => {
     if (!req.user) {

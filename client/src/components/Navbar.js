@@ -60,6 +60,16 @@ const Navbar = () => {
                         Register
                     </Link>
                 </li>
+                <li style={liStyle}>
+                    <Link
+                        to="/adminlogin" // Ensure you have a route for this path
+                        style={linkStyle}
+                        onMouseOver={(e) => e.target.style.textDecoration = linkHoverStyle.textDecoration}
+                        onMouseOut={(e) => e.target.style.textDecoration = linkStyle.textDecoration}
+                    >
+                        Admin
+                    </Link>
+                </li>
             </ul>
         </nav>
     );
