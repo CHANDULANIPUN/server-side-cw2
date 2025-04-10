@@ -21,6 +21,17 @@ class UserDao {
             );
         });
     }
+    static async getUserByApiKey(apiKey) {
+        try {
+            const query = 'SELECT * FROM users WHERE api_key = ?'; // Assuming you have an api_key column
+            const [rows] = await db.execute(query, [apiKey]);
+            return rows[0]; // Return the first user found
+        } catch (error) {
+            console.error('Error fetching user by API key:', error);
+            throw error; // Rethrow the error for further handling
+        }
+    }
+
     static getUserByUsername(username) {
         return new Promise((resolve, reject) => {
             if (!username) {
@@ -32,11 +43,11 @@ class UserDao {
                 [username],
                 (err, row) => {
                     if (err) {
-                    
+
                         console.error(`Database error: ${err.message}`);
                         return reject(new Error('Failed to fetch user by username'));
                     }
-                    resolve(row || null); 
+                    resolve(row || null);
                 }
             );
         });
@@ -48,12 +59,12 @@ class UserDao {
             const sql = `UPDATE users SET api_key = ? WHERE username = ?`;
             db.run(sql, [newApiKey, username], function (err) {
                 if (err) {
-                    
+
                     console.error(`Failed to update API key for user ${username}: ${err.message}`);
                     return reject(new Error(`Failed to update API key: ${err.message}`));
                 }
 
-               
+
                 if (this.changes === 0) {
                     return reject(new Error(`No user found with username: ${username}`));
                 }
@@ -72,7 +83,7 @@ class UserDao {
                     console.error(`Failed to revoke API key for user ${username}: ${err.message}`);
                     return reject(new Error(`Failed to revoke API key: ${err.message}`));
                 }
-                
+
                 if (this.changes === 0) {
                     return reject(new Error(`No user found with username: ${username}`));
                 }

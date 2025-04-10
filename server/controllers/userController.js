@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
-const UserDao = require('../dao/userDao');
+const UserDao = require('../dao/userDao'); // Adjust the path to your UserDao file
 const { v4: uuidv4 } = require('uuid');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'default_secret'; 
@@ -23,6 +23,24 @@ exports.registerUser  = async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 };
+
+exports.createAdminUser  = async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUserId = await UserDao.createUser (username, hashedPassword, 'admin');
+        res.status(201).json({ message: 'Admin user created successfully', userId: newUserId });
+    } catch (error) {
+        console.error('Error creating admin user:', error);
+        res.status(500).json({ error: 'Failed to create admin user' });
+    }
+};;
+
 exports.loginUser  = async (req, res) => {
     const { username, password } = req.body;
 
