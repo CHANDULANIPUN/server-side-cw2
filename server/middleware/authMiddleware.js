@@ -27,10 +27,10 @@ const isAdmin = async (req, res, next) => {
         return res.status(403).json({ error: 'User  not authenticated' });
     }
 
-    const { username } = req.user;
+    const { email} = req.user;
 
     try {
-        const user = await UserDao.getUserByUsername(username);
+        const user = await UserDao.getUserByEmail(email);
         if (user && user.role === 'admin') {
             next(); // User is an admin, proceed to the next middleware
         } else {

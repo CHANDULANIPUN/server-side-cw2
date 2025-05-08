@@ -2,28 +2,15 @@ const db = require('../config/db');
 const User = require('../models/userModel');
 
 class UserDao {
-    static findUserByUsername(username) {
+    static createUser (username, email, password, role = 'user') {
         return new Promise((resolve, reject) => {
-            const sql = "SELECT * FROM users WHERE username = ?";
-            db.get(sql, [username], (err, row) => {
-                if (err) {
-                    console.error(`Error fetching user: ${err.message}`);
-                    return reject(err);
-                }
-                resolve(row); // Will be null if no user is found
-            });
-        });
-    }
-
-    static createUser (username, password, role = 'user') {
-        return new Promise((resolve, reject) => {
-            if (!username || !password) {
-                return reject(new Error('Invalid input: username and password are required'));
+            if (!username || !email|| !password) {
+                return reject(new Error('Invalid input: username email and password are required'));
             }
 
             db.run(
-                "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                [username, password, role],
+                "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)",
+                [username, email, password, role],
                 function (err) {
                     if (err) {
                         return reject(new Error(`Failed to create user: ${err.message}`));
@@ -33,6 +20,43 @@ class UserDao {
             );
         });
     }
+    static findUserByEmail(email) {
+        return new Promise((resolve, reject) => {
+            const sql = "SELECT * FROM users WHERE email = ?";
+            db.get(sql, [email], (err, row) => {
+                if (err) {
+                    console.error(`Error fetching user: ${err.message}`);
+                    return reject(err);
+                }
+                resolve(row); 
+            });
+        });
+    }
+
+    static getUserByEmail(email) {
+        return new Promise((resolve, reject) => {
+            if (!email) {
+                return reject(new Error('Invalid input: email is required'));
+            }
+    
+            const sql = "SELECT id, username, email, password, api_key, role FROM users WHERE email = ?";
+    
+            db.get(sql, [email], (err, row) => {
+                if (err) {
+                    console.error(`Database error while fetching user by email: ${err.message}`);
+                    return reject(new Error('Failed to fetch user by email'));
+                }
+    
+                if (!row) {
+                    console.warn(`No user found with email: ${email}`);
+                    return resolve(null); // Resolve null if no user is found
+                }
+    
+                resolve(row); // Return the user row if found
+            });
+        });
+    }
+    
 
     static getUserByApiKey(apiKey) {
         return new Promise((resolve, reject) => {
@@ -51,70 +75,151 @@ class UserDao {
         });
     }
 
-
-
-    static getUserByUsername(username) {
+    static updateApiKey(email, newApiKey) {
         return new Promise((resolve, reject) => {
-            if (!username) {
-                return reject(new Error('Invalid input: username is required'));
+            if (!email || !newApiKey) {
+                return reject(new Error('Invalid input: email and newApiKey are required'));
             }
     
-            db.get(
-                "SELECT * FROM users WHERE username = ?",
-                [username],
-                (err, row) => {
-                    if (err) {
-                        console.error(`Database error: ${err.message}`);
-                        return reject(new Error('Failed to fetch user by username'));
-                    }
-                    resolve(row || null); // Return null if no user is found
-                }
-            );
-        });
-    }
-
-    static updateApiKey(username, newApiKey) {
-        return new Promise((resolve, reject) => {
-            if (!username || !newApiKey) {
-                return reject(new Error('Invalid input: username and newApiKey are required'));
-            }
-    
-            const sql = `UPDATE users SET api_key = ? WHERE username = ?`;
-            db.run(sql, [newApiKey, username], function (err) {
+            const sql = `UPDATE users SET api_key = ? WHERE email = ?`;
+            db.run(sql, [newApiKey, email], function (err) {
                 if (err) {
-                    console.error(`Failed to update API key for user ${username}: ${err.message}`);
+                    console.error(`Failed to update API key for user ${email}: ${err.message}`);
                     return reject(new Error('Failed to update API key'));
                 }
     
                 if (this.changes === 0) {
-                    console.error(`No user found with username: ${username}`);
-                    return reject(new Error(`No user found with username: ${username}`));
+                    console.error(`No user found with email: ${email}`);
+                    return reject(new Error(`No user found with email: ${email}`));
                 }
     
-                console.log(`API key updated for user ${username}`);
+                console.log(`API key updated for user ${email}`);
                 resolve(this.changes); // Resolve with the number of changes
             });
         });
     }
 
-
-    static revokeApiKey(username) {
+    static revokeApiKey(email) {
         return new Promise((resolve, reject) => {
-            const sql = `UPDATE users SET api_key = NULL WHERE username = ?`;
-            db.run(sql, [username], function (err) {
+            const sql = `UPDATE users SET api_key = NULL WHERE email = ?`;
+            db.run(sql, [email], function (err) {
                 if (err) {
-                    console.error(`Failed to revoke API key for user ${username}: ${err.message}`);
+                    console.error(`Failed to revoke API key for user ${email}: ${err.message}`);
                     return reject(new Error(`Failed to revoke API key: ${err.message}`));
                 }
 
                 if (this.changes === 0) {
-                    return reject(new Error(`No user found with username: ${username}`));
+                    return reject(new Error(`No user found with email: ${email}`));
                 }
 
                 resolve(this.changes);
             });
         });
     }
+
+    static isFollowing(followerId, followingId) {
+        return new Promise((resolve, reject) => {
+            const sql = `SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?`;
+            db.get(sql, [followerId, followingId], (err, row) => {
+                if (err) return reject(err);
+                resolve(!!row);
+            });
+        });
+    }
+
+    static followUser(followerId, followingId) {
+        return new Promise((resolve, reject) => {
+            const sql = `INSERT INTO follows (follower_id, following_id) VALUES (?, ?)`;
+            db.run(sql, [followerId, followingId], function (err) {
+                if (err) return reject(err);
+                resolve(this.lastID);
+            });
+        });
+    }
+
+    static unfollowUser(followerId, followingId) {
+        return new Promise((resolve, reject) => {
+            const sql = `DELETE FROM follows WHERE follower_id = ? AND following_id = ?`;
+            db.run(sql, [followerId, followingId], function (err) {
+                if (err) return reject(err);
+                resolve(this.changes); // returns number of rows deleted
+            });
+        });
+    }
+
+    static getFollowers(userId) {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                SELECT users.id, users.username 
+                FROM follows 
+                JOIN users ON follows.follower_id = users.id 
+                WHERE follows.following_id = ?
+            `;
+            db.all(sql, [userId], (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+    }
+
+    static getFollowing(userId) {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                SELECT users.id, users.username 
+                FROM follows 
+                JOIN users ON follows.following_id = users.id 
+                WHERE follows.follower_id = ?
+            `;
+            db.all(sql, [userId], (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+    }
+
+    static getFeedPosts(userId) {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                SELECT blog.* 
+                FROM blog 
+                JOIN users ON blog.user_name = users.username
+                JOIN follows ON follows.following_id = users.id
+                WHERE follows.follower_id = ?
+                ORDER BY blog.created_at DESC
+            `;
+            db.all(sql, [userId], (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+    }
+
+    static getUserById(userId) {
+        return new Promise((resolve, reject) => {
+            // Validate input
+            if (!userId) {
+                return reject(new Error('Invalid input: userId is required'));
+            }
+    
+            const sql = "SELECT id, username, email FROM users WHERE id = ?";
+    
+            db.get(sql, [userId], (err, row) => {
+                if (err) {
+                    console.error(`Database error while fetching user by id: ${err.message}`);
+                    return reject(new Error('Failed to fetch user by id'));
+                }
+    
+                if (!row) {
+                    console.warn(`No user found with id: ${userId}`);
+                    return resolve(null);
+                }
+    
+                resolve(row);
+            });
+        });
+    }
+    
+    
 }
 
 

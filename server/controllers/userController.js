@@ -1,60 +1,129 @@
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const UserDao = require('../dao/userDao');
-const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default_secret'; 
+const JWT_SECRET = process.env.JWT_SECRET || 'default_secret';
 
+exports.registerUser = async (req, res) => {
+    const { username, email, password, role } = req.body;
 
-exports.registerUser  = async (req, res) => {
-    const { username, password, role } = req.body;
-
-    if (!username || !password) {
+    if (!username|| !email || !password) {
         return res.status(400).json({ error: 'Please add all fields' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Regular expression for validating an Email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+    }
 
     try {
-        // Use the provided role or default to 'user' if not specified
-        const userId = await UserDao.createUser (username, hashedPassword, role || 'user');
+        const existingUser = await UserDao.findUserByEmail(email);
+        if (existingUser) {
+            return res.status(400).json({ error: 'User  already exists' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const userId = await UserDao.createUser(username, email, hashedPassword, role || 'user');
         res.status(201).json({ message: 'User  registered successfully', userId });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 };
-exports.createAdminUser  = async (req, res) => {
-    const { username, password } = req.body;
+exports.loginUser = async (req, res) => {
+    const { username, email, password } = req.body;
 
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Username and password are required' });
+    if (!username || !email || !password) {
+        return res.status(400).json({ error: 'Username, email, and password are required' });
     }
 
     try {
-        // Check if the username already exists
-        const existingUser  = await UserDao.findUserByUsername(username);
-        if (existingUser ) {
-            return res.status(409).json({ error: 'Username already exists' });
+        const user = await UserDao.getUserByEmail(email);
+        console.log('Retrieved user:', user);
+
+        if (!user) {
+            return res.status(401).json({ error: 'There is no User' });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        console.log('Password valid:', isPasswordValid);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Invalid password' });
+        }
+
+        const apiKey = uuidv4();
+        console.log('Generated API key:', apiKey);
+
+        await UserDao.updateApiKey(user.email, apiKey);
+
+        
+        res.status(200).json({
+            message: 'Login successful',
+            apiKey,
+            userId: user.id, 
+        });
+    } catch (error) {
+        console.error('Error during login:', error);
+        res.status(500).json({ error: 'Failed to log in' });
+    }
+};
+
+exports.logoutUser  = async (req, res) => {
+    console.log('Received body:', req.body);
+    const { apiKey } = req.body;
+
+    if (!apiKey) {
+        return res.status(400).json({ error: 'API key is required' });
+    }
+
+    try {
+        // Fetch the user by API key
+        const user = await UserDao.getUserByApiKey(apiKey);
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid API key' });
+        }
+
+        // Revoke the API key by setting it to NULL
+        await UserDao.revokeApiKey(user.email);
+
+        console.log(`User  ${user.email} logged out successfully.`);
+
+        res.status(200).json({ message: 'Logout successful' });
+    } catch (error) {
+        console.error('Error during logout:', error.message || error);
+        res.status(500).json({ error: 'Failed to log out' });
+    }
+};
+exports.createAdminUser = async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    try {
+        // Check if the Email already exists
+        const existingUser = await UserDao.findUserByEmail(email);
+        if (existingUser) {
+            return res.status(409).json({ error: 'Email already exists' });
         }
 
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Generate a unique API key
-        const apiKey = crypto.randomBytes(16).toString('hex');
-
         // Create the user with the role 'admin' and the generated API key
-        const newUserId = await UserDao.createUser (username, hashedPassword, 'admin', apiKey);
+        const newUserId = await UserDao.createUser(email, hashedPassword, 'admin');
 
         // Respond with the user details including the API key
         res.status(201).json({
             message: 'Admin user created successfully',
             userId: newUserId,
-            username: username,
+            username: email,
             role: 'admin',
-            apiKey: apiKey
         });
     } catch (error) {
         console.error('Error creating admin user:', error);
@@ -62,63 +131,27 @@ exports.createAdminUser  = async (req, res) => {
     }
 };
 
-exports.loginUser  = async (req, res) => {
-    const { username, password } = req.body;
 
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Username and password are required' });
+exports.adminlogin = async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
     }
 
     try {
-        const user = await UserDao.getUserByUsername(username);
+        const user = await UserDao.getUserByEmail(email);
         console.log('Retrieved user:', user);
 
         if (!user) {
-            return res.status(401).json({ error: 'Invalid username or password' });
+            return res.status(401).json({ error: 'Email username or password' });
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         console.log('Password valid:', isPasswordValid);
 
         if (!isPasswordValid) {
-            return res.status(401).json({ error: 'Invalid username or password' });
-        }
-
-        // Generate a new API key
-        const apiKey = uuidv4();
-        console.log('Generated API key:', apiKey);
-
-        // Update the API key in the database
-        await UserDao.updateApiKey(user.username, apiKey);
-        console.log('API key updated for user:', user.username);
-
-        res.status(200).json({ message: 'Login successful', apiKey });
-    } catch (error) {
-        console.error('Error during login:', error);
-        res.status(500).json({ error: 'Failed to log in' });
-    }
-};
-
-exports.adminlogin  = async (req, res) => {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Username and password are required' });
-    }
-
-    try {
-        const user = await UserDao.getUserByUsername(username);
-        console.log('Retrieved user:', user);
-
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid username or password' });
-        }
-
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        console.log('Password valid:', isPasswordValid);
-
-        if (!isPasswordValid) {
-            return res.status(401).json({ error: 'Invalid username or password' });
+            return res.status(401).json({ error: 'Invalid email or password' });
         }
 
         // Check if user role is not admin
@@ -131,11 +164,11 @@ exports.adminlogin  = async (req, res) => {
         console.log('Generated API key:', apiKey);
 
         // Update the API key in the database
-        await UserDao.updateApiKey(user.username, apiKey);
-        console.log('API key updated for user:', user.username);
+        await UserDao.updateApiKey(user.email, apiKey);
+        console.log('API key updated for user:', user.email);
 
         // Return success response with API key and role
-        res.status(200).json({ message: 'Login successful', apiKey, role: user.role });
+        res.status(200).json({ message: 'Admin Login Sucessfully', apiKey, role: user.role });
     } catch (error) {
         console.error('Error during login:', error);
         res.status(500).json({ error: 'Failed to log in' });
@@ -184,7 +217,7 @@ async function getCountryWithRetries(name, retries = 3) {
         } catch (error) {
             if (i === retries - 1) {
                 console.error(`Failed to fetch country information for "${name}" after ${retries} retries:`, error.message);
-                throw error; 
+                throw error;
             }
             console.log(`Retrying... (${i + 1})`);
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -218,3 +251,93 @@ exports.getCountryData = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch country information' });
     }
 };
+
+exports.followUser = async (req, res) => {
+    const followerId = req.user.id;  
+    const { followingId } = req.body;
+
+    if (!followerId || !followingId) {
+        return res.status(400).json({ error: 'Follower ID and following ID are required' });
+    }
+
+    try {
+        const alreadyFollowing = await UserDao.isFollowing(followerId, followingId);
+        if (alreadyFollowing) {
+            return res.status(400).json({ error: 'Already following this user' });
+        }
+
+        await UserDao.followUser(followerId, followingId);
+        res.status(200).json({ message: 'Followed successfully' });
+    } catch (error) {
+        console.error('Error following user:', error);
+        res.status(500).json({ error: 'Failed to follow user' });
+    }
+};
+
+exports.unfollowUser = async (req, res) => {
+    const { followerId, followingId } = req.body;
+
+    if (!followerId || !followingId) {
+        return res.status(400).json({ error: 'Follower ID and following ID are required' });
+    }
+
+    try {
+        await UserDao.unfollowUser(followerId, followingId);
+        res.status(200).json({ message: 'Unfollowed successfully' });
+    } catch (error) {
+        console.error('Error unfollowing user:', error);
+        res.status(500).json({ error: 'Failed to unfollow user' });
+    }
+};
+
+exports.getFollowers = async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        const followers = await UserDao.getFollowers(userId);
+        res.status(200).json({ followers });
+    } catch (error) {
+        console.error('Error getting followers:', error);
+        res.status(500).json({ error: 'Failed to get followers' });
+    }
+};
+
+exports.getFollowing = async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        const following = await UserDao.getFollowing(userId);
+        res.status(200).json({ following });
+    } catch (error) {
+        console.error('Error getting following:', error);
+        res.status(500).json({ error: 'Failed to get following' });
+    }
+};
+
+
+exports.getFollowingFeed = async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        const posts = await UserDao.getFeedPosts(userId);
+        res.status(200).json({ posts });
+    } catch (error) {
+        console.error('Error getting following feed:', error);
+        res.status(500).json({ error: 'Failed to get following feed' });
+    }
+};
+
+exports.getUserById = async (req, res) => {
+    const userId = req.params.userId;
+    try {
+        const user = await UserDao.getUserById(userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json({ id: user.id, username: user.username, email: user.email });
+    } catch (error) {
+        console.error('Error fetching user by id:', error);
+        res.status(500).json({ error: 'Failed to fetch user' });
+    }
+};
+

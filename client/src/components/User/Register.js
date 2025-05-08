@@ -1,26 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
 
-const Login = ({ setApiKey }) => {
+const Register = () => {
     const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
-    const navigate = useNavigate(); // Initialize the navigate function
 
-    const handleLogin = async (e) => {
+    useEffect(() => {
+        // Set the page title
+        document.title = 'Register Page';
+    }, []);
+
+    const handleRegister = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post('http://localhost:5001/api/login', { username, password });
-            setApiKey(response.data.apiKey);
-            setMessage('Login successful!');
-            navigate('/dashboard'); // Redirect to the CountryData page
+            const response = await axios.post('http://localhost:5001/api/register', {username, email, password });
+            setMessage(response.data.message);
         } catch (error) {
-            setMessage('Login failed: ' + error.response.data.error);
+            setMessage('Registration failed: ' + (error.response?.data?.error || 'Unknown error'));
         }
     };
 
-    // Inline styles
+
     const containerStyle = {
         display: 'flex',
         flexDirection: 'column',
@@ -33,6 +36,7 @@ const Login = ({ setApiKey }) => {
 
     const formStyle = {
         maxWidth: '400px',
+        width: '100%',
         padding: '20px',
         border: '1px solid #ccc',
         borderRadius: '8px',
@@ -45,6 +49,7 @@ const Login = ({ setApiKey }) => {
         color: '#333',
         marginBottom: '20px',
         marginTop: '30px',
+        textAlign: 'center',
     };
 
     const paragraphStyle = {
@@ -88,24 +93,23 @@ const Login = ({ setApiKey }) => {
     };
 
     const buttonHoverStyle = {
-        backgroundColor: '#666666',
+        backgroundColor: '#595959',
     };
 
     const messageStyle = {
         textAlign: 'center',
         color: '#d9534f',
-        marginTop: '30px',
+        marginTop: '20px',
     };
 
     return (
         <div style={containerStyle}>
-            <h1 style={h1Style}>Login Page</h1>
+            <h1 style={h1Style}>Register Page</h1>
             <p style={paragraphStyle}>
-                Welcome to the Country Info App! Please log in to access detailed information about countries around the world. If you don't have an account, you can register by clicking the link below.
+                Create an account to access exclusive features and content. If you already have an account, you can log in using the link below.
             </p>
-
-            <form onSubmit={handleLogin} style={formStyle}>
-                <h2 style={h2Style}>Login</h2>
+            <form onSubmit={handleRegister} style={formStyle}>
+                <h2 style={h2Style}>Register</h2>
                 <input
                     type="text"
                     placeholder="Username"
@@ -115,7 +119,14 @@ const Login = ({ setApiKey }) => {
                     style={inputStyle}
                 />
                 <input
-                    type="password"
+                    type="text"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    style={inputStyle}
+                />
+                <input type="password"
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -128,15 +139,15 @@ const Login = ({ setApiKey }) => {
                     onMouseOver={(e) => e.target.style.backgroundColor = buttonHoverStyle.backgroundColor}
                     onMouseOut={(e) => e.target.style.backgroundColor = buttonStyle.backgroundColor}
                 >
-                    Login
+                    Register
                 </button>
                 {message && <p style={messageStyle}>{message}</p>}
                 <p style={{ textAlign: 'center', marginTop: '10px' }}>
-                    If you are not registered, <Link to="/register">register here</Link>.
+                    If you have already registered, <Link to="/login">login here</Link>.
                 </p>
             </form>
         </div>
     );
 };
 
-export default Login;
+export default Register;
