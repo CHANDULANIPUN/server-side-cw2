@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import FollowButton from './FollowButton'; // make sure the path is correct
 
 const AllPosts = () => {
   const [posts, setPosts] = useState([]);
-  const currentUserId = 1; // hardcoded for now; replace with real user ID later
+  const [followStates, setFollowStates] = useState({});
+  const [loadingStates, setLoadingStates] = useState({});
+  const currentUserId = 1; // hardcoded for now
 
   useEffect(() => {
     fetchPosts();
@@ -14,6 +15,16 @@ const AllPosts = () => {
     try {
       const res = await axios.get('http://localhost:5001/api/posts');
       setPosts(res.data);
+
+      // Initialize follow states
+      const initialFollowStates = {};
+      const initialLoadingStates = {};
+      res.data.forEach((post) => {
+        initialFollowStates[post.id] = post.isFollowing || false;
+        initialLoadingStates[post.id] = false;
+      });
+      setFollowStates(initialFollowStates);
+      setLoadingStates(initialLoadingStates);
     } catch (err) {
       console.error('Error fetching posts:', err);
     }
@@ -21,7 +32,9 @@ const AllPosts = () => {
 
   const handleLike = async (postId) => {
     try {
-      await axios.post(`http://localhost:5001/api/posts/${postId}/like`, { userId: currentUserId });
+      await axios.post(`http://localhost:5001/api/posts/${postId}/like`, {
+        userId: currentUserId,
+      });
       fetchPosts();
     } catch (err) {
       console.error('Error liking post:', err);
@@ -30,10 +43,36 @@ const AllPosts = () => {
 
   const handleDislike = async (postId) => {
     try {
-      await axios.post(`http://localhost:5001/api/posts/${postId}/dislike`, { userId: currentUserId });
+      await axios.post(`http://localhost:5001/api/posts/${postId}/dislike`, {
+        userId: currentUserId,
+      });
       fetchPosts();
     } catch (err) {
       console.error('Error disliking post:', err);
+    }
+  };
+
+  const handleFollowToggle = async (postId, followingId) => {
+    setLoadingStates((prev) => ({ ...prev, [postId]: true }));
+    try {
+      if (followStates[postId]) {
+        await axios.post('http://localhost:5001/api/unfollow', {
+          followerId: currentUserId,
+          followingId,
+        });
+        setFollowStates((prev) => ({ ...prev, [postId]: false }));
+      } else {
+        await axios.post('http://localhost:5001/api/follow', {
+          followerId: currentUserId,
+          followingId,
+        });
+        setFollowStates((prev) => ({ ...prev, [postId]: true }));
+      }
+    } catch (err) {
+      console.error('Error toggling follow status:', err);
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, [postId]: false }));
     }
   };
 
@@ -95,6 +134,16 @@ const AllPosts = () => {
     backgroundColor: '#dc3545',
   };
 
+  const followButtonStyle = (isFollowing, loading) => ({
+    padding: '6px 12px',
+    backgroundColor: isFollowing ? '#dc3545' : '#28a745',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: loading ? 'not-allowed' : 'pointer',
+    opacity: loading ? 0.6 : 1,
+  });
+
   return (
     <div style={containerStyle}>
       <h2 style={headingStyle}>All Blog Posts</h2>
@@ -115,7 +164,6 @@ const AllPosts = () => {
               👍 Likes: {post.likes || 0} | 👎 Dislikes: {post.dislikes || 0}
             </p>
 
-            {/* Like/Dislike Buttons */}
             <button style={buttonStyle} onClick={() => handleLike(post.id)}>
               👍 Like
             </button>
@@ -123,13 +171,19 @@ const AllPosts = () => {
               👎 Dislike
             </button>
 
-            {/* Follow Button (only show if not own post) */}
+            {/* Follow Button (only if not own post) */}
             {post.user_id && post.user_id !== currentUserId && (
-              <FollowButton
-                followerId={currentUserId}
-                followingId={post.user_id}
-                isInitiallyFollowing={post.isFollowing || false} // make sure backend provides this
-              />
+              <button
+                style={followButtonStyle(followStates[post.id], loadingStates[post.id])}
+                onClick={() => handleFollowToggle(post.id, post.user_id)}
+                disabled={loadingStates[post.id]}
+              >
+                {loadingStates[post.id]
+                  ? 'Processing...'
+                  : followStates[post.id]
+                  ? 'Unfollow'
+                  : 'Follow'}
+              </button>
             )}
           </div>
         ))

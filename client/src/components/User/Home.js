@@ -22,6 +22,7 @@ const HomePage = forwardRef((props, ref) => {
 
   const [allPosts, setAllPosts] = useState([]);
   const [allLoading, setAllLoading] = useState(false);
+  const [sortOption, setSortOption] = useState('newest');
 
   useImperativeHandle(ref, () => ({
     handleSearchFromNavbar(text) {
@@ -31,7 +32,6 @@ const HomePage = forwardRef((props, ref) => {
     },
   }));
 
-  // Fetch all posts
   const fetchAllPosts = useCallback(async () => {
     setAllLoading(true);
     try {
@@ -49,7 +49,6 @@ const HomePage = forwardRef((props, ref) => {
     fetchAllPosts();
   }, [fetchAllPosts]);
 
-  // Fetch search results
   const fetchSearchResults = useCallback(async () => {
     if (!hasSearched) return;
     setSearchLoading(true);
@@ -70,11 +69,7 @@ const HomePage = forwardRef((props, ref) => {
     fetchSearchResults();
   }, [fetchSearchResults]);
 
-  const handleLearnClick = () => {
-    navigate('/login');
-  };
-
-  // Like/Dislike Handlers
+  
   const handleLike = async (postId) => {
     try {
       await axios.post(`http://localhost:5001/api/posts/${postId}/like`, {
@@ -97,7 +92,19 @@ const HomePage = forwardRef((props, ref) => {
     }
   };
 
-  // Styles
+  const sortPosts = (posts) => {
+    return [...posts].sort((a, b) => {
+      if (sortOption === 'newest') {
+        return new Date(b.date_of_visit) - new Date(a.date_of_visit);
+      } else if (sortOption === 'mostLiked') {
+        return (b.likes || 0) - (a.likes || 0);
+      } else if (sortOption === 'mostCommented') {
+        return (b.commentCount || 0) - (a.commentCount || 0);
+      }
+      return 0;
+    });
+  };
+
   const containerStyle = {
     textAlign: 'center',
     padding: '50px 20px',
@@ -165,7 +172,8 @@ const HomePage = forwardRef((props, ref) => {
           : 'N/A'}
       </p>
       <p>
-        👍 Likes: {post.likes || 0} | 👎 Dislikes: {post.dislikes || 0}
+        👍 Likes: {post.likes || 0} | 👎 Dislikes: {post.dislikes || 0} | 💬
+        Comments: {post.commentCount || 0}
       </p>
       <button style={likeButtonStyle} onClick={() => handleLike(post.id)}>
         👍 Like
@@ -180,12 +188,21 @@ const HomePage = forwardRef((props, ref) => {
     <div style={containerStyle}>
       <h1>Welcome to GlobalGlimpse App</h1>
       <p>
-        Discover detailed information about countries around the world. Our app provides comprehensive data on geography, population, economy, and more.
+        Discover detailed information about countries around the world. Our app
+        provides comprehensive data on geography, population, economy, and more.
       </p>
-
-      <button onClick={handleLearnClick} style={buttonStyle}>
-        Learn More
-      </button>
+      <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+        <label htmlFor="sort">Sort by: </label>
+        <select
+          id="sort"
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value)}
+        >
+          <option value="newest">Newest</option>
+          <option value="mostLiked">Most Liked</option>
+          <option value="mostCommented">Most Commented</option>
+        </select>
+      </div>
 
       <div style={{ marginTop: '40px' }}>
         {hasSearched ? (
@@ -196,10 +213,8 @@ const HomePage = forwardRef((props, ref) => {
             ) : searchResults.length === 0 ? (
               <p>No blog posts found.</p>
             ) : (
-              searchResults.map(renderPost)
+              sortPosts(searchResults).map(renderPost)
             )}
-
-            {/* Pagination */}
             <div style={{ marginTop: '10px' }}>
               <button
                 onClick={() => setSearchPage((prev) => Math.max(prev - 1, 1))}
@@ -213,7 +228,9 @@ const HomePage = forwardRef((props, ref) => {
               </span>
               <button
                 onClick={() =>
-                  setSearchPage((prev) => Math.min(prev + 1, searchTotalPages))
+                  setSearchPage((prev) =>
+                    Math.min(prev + 1, searchTotalPages)
+                  )
                 }
                 disabled={searchPage === searchTotalPages}
                 style={{ marginLeft: '10px' }}
@@ -221,7 +238,6 @@ const HomePage = forwardRef((props, ref) => {
                 Next
               </button>
             </div>
-
             <button
               onClick={() => {
                 setHasSearched(false);
@@ -241,7 +257,7 @@ const HomePage = forwardRef((props, ref) => {
             ) : allPosts.length === 0 ? (
               <p>No blog posts available.</p>
             ) : (
-              allPosts.map(renderPost)
+              sortPosts(allPosts).map(renderPost)
             )}
           </div>
         )}

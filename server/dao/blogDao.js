@@ -136,15 +136,35 @@ class BlogDao {
         });
     }
 
-    static isFollowing(followerId, followingId, callback) {
-        const sql = `
-            SELECT COUNT(*) AS count
-            FROM follows
-            WHERE follower_id = ? AND following_id = ?
-        `;
-        db.get(sql, [followerId, followingId], (err, row) => {
-            if (err) return callback(err);
-            callback(null, row.count > 0);
+    // dao/BlogDao.js
+
+    static getSortedPosts(sortBy) {
+        return new Promise((resolve, reject) => {
+            let sql;
+
+            if (sortBy === 'most_liked') {
+                sql = `
+                    SELECT b.*, COUNT(pl.id) AS like_count
+                    FROM blogs b
+                    LEFT JOIN post_likes pl ON b.id = pl.post_id AND pl.is_liked = 1
+                    GROUP BY b.id
+                    ORDER BY like_count DESC;
+                `;
+            } else {
+                // Default to newest
+                sql = `
+                    SELECT * FROM blogs
+                    ORDER BY date_of_visit DESC;
+                `;
+            }
+
+            db.all(sql, [], (err, rows) => {
+                if (err) {
+                    console.error(`Database error while fetching sorted posts: ${err.message}`);
+                    return reject(err);
+                }
+                resolve(rows || []);  // always return an array
+            });
         });
     }
 

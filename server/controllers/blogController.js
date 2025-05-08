@@ -207,39 +207,25 @@ exports.dislikePost = async (req, res) => {
     }
 };
 
-exports.getUserPosts = async (req, res) => {
-    const username = req.params.username;
-    const currentUserId = req.query.currentUserId; 
+exports.getSortedPosts = async (req, res) => {
+    const { sortBy } = req.query;
 
     try {
         const posts = await new Promise((resolve, reject) => {
-            BlogDao.getPostsByUsername(username, (err, rows) => {
+            BlogDao.getSortedPosts(sortBy, (err, data) => {
                 if (err) return reject(err);
-                resolve(rows);
+                resolve(data);
             });
         });
 
-        
-        const enrichedPosts = await Promise.all(posts.map(async (post) => {
-            if (!currentUserId) {
-                return { ...post, isFollowing: false }; 
-            }
-
-            const isFollowing = await new Promise((resolve, reject) => {
-                BlogDao.isFollowing(currentUserId, post.user_id, (err, result) => {
-                    if (err) return reject(err);
-                    resolve(result);
-                });
-            });
-
-            return { ...post, isFollowing };
-        }));
-
-        res.status(200).json(enrichedPosts);
+        res.status(200).json(posts);
     } catch (error) {
-        console.error('Error fetching user posts:', error);
-        res.status(500).json({ error: 'Failed to fetch user posts' });
+        console.error('Error fetching sorted posts:', error);
+        res.status(500).json({ error: 'Failed to fetch sorted posts' });
     }
 };
+
+
+
 
 

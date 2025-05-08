@@ -1,6 +1,6 @@
 const express = require('express');
 const {
-    registerUser, loginUser, getCountryData, generateApiKey, revokeApiKey,
+    registerUser, loginUser, getAllCountries, generateApiKey, revokeApiKey,
     createAdminUser, adminlogin, logoutUser, followUser, unfollowUser,
     getFollowers, getFollowing, getFollowingFeed, getUserById
 } = require('../controllers/userController.js');
@@ -8,7 +8,7 @@ const { authenticate, isAdmin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-router.get('/countries/:name', authenticate, getCountryData);
+router.get('/countries',getAllCountries);
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/logout', logoutUser);

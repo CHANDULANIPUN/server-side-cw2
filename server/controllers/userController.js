@@ -209,52 +209,44 @@ exports.revokeApiKey = async (req, res) => {
         res.status(500).json({ error: 'Failed to revoke API key' });
     }
 };
-async function getCountryWithRetries(name, retries = 3) {
+async function getAllCountriesWithRetries(retries = 3) {
     for (let i = 0; i < retries; i++) {
         try {
-            const response = await axios.get(`https://restcountries.com/v3.1/name/${name}`);
+            const response = await axios.get('https://restcountries.com/v3.1/all');
             return response.data;
         } catch (error) {
             if (i === retries - 1) {
-                console.error(`Failed to fetch country information for "${name}" after ${retries} retries:`, error.message);
+                console.error(`Failed to fetch all countries after ${retries} retries:`, error.message);
                 throw error;
             }
-            console.log(`Retrying... (${i + 1})`);
+            console.log(`Retrying fetch all countries... (${i + 1})`);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     }
 }
 
-exports.getCountryData = async (req, res) => {
-    const { name } = req.params;
-
-    if (!name || typeof name !== 'string' || name.trim() === '') {
-        return res.status(400).json({ error: 'Country name is required and must be a valid string' });
-    }
-
+exports.getAllCountries = async (req, res) => {
     try {
-        const data = await getCountryWithRetries(name);
-        const country = data[0];
-        const countryInfo = {
+        const data = await getAllCountriesWithRetries();
+
+        const countryList = data.map(country => ({
             name: country.name?.common || 'N/A',
             capital: country.capital ? country.capital[0] : 'N/A',
             currencies: country.currencies ? Object.values(country.currencies).map(c => c.name).join(', ') : 'N/A',
             languages: country.languages ? Object.values(country.languages).join(', ') : 'N/A',
             flag: country.flags?.svg || 'N/A'
-        };
-        res.json(countryInfo);
+        }));
+
+        res.json(countryList);
     } catch (error) {
-        console.error(`Error fetching country information for "${name}":`, error.message);
-        if (error.response && error.response.status === 404) {
-            return res.status(404).json({ error: `Country not found: ${name}` });
-        }
-        res.status(500).json({ error: 'Failed to fetch country information' });
+        console.error('Error fetching all countries:', error.message);
+        res.status(500).json({ error: 'Failed to fetch all country data' });
     }
 };
 
+
 exports.followUser = async (req, res) => {
-    const followerId = req.user.id;  
-    const { followingId } = req.body;
+    const { followerId, followingId } = req.body;    
 
     if (!followerId || !followingId) {
         return res.status(400).json({ error: 'Follower ID and following ID are required' });
