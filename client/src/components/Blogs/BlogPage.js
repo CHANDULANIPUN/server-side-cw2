@@ -1,10 +1,9 @@
-// pages/BlogPage.js
+
 import React, { useState } from 'react';
 import BlogSidebar from './BlogSidebar.js';
 import CreatePost from './CreatePost.js';
-import UpdatePost from './UpdatePost.js';
-import DeletePost from './DeletePost.js';
-import AllPosts from './AllPosts.js';
+
+
 
 
 const BlogPage = () => {
@@ -14,12 +13,7 @@ const BlogPage = () => {
     switch (activeComponent) {
       case 'create':
         return <CreatePost />;
-      case 'update':
-        return <UpdatePost />;
-      case 'delete':
-        return <DeletePost />;
-      default:
-        return <AllPosts />;
+        
     }
   };
 

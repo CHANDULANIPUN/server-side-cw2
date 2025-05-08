@@ -52,9 +52,7 @@ const BlogSidebar = ({ setActive }) => {
 
   const actions = [
     'create',
-    'update',
     'delete',
-    'all',
   ];
 
   return (
