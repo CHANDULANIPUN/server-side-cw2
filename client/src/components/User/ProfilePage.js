@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 import UserPosts from '../Blogs/userPosts';
 
@@ -115,16 +114,14 @@ const ProfilePage = ({ profileUserId, loggedInUserId }) => {
                 >
                     My Posts
                 </button>
-
-                {/* NEW Blog Button */}
-                <Link
+                <button
                     to="/blog"
                     style={buttonStyle}
                     onMouseOver={e => e.target.style.backgroundColor = buttonHoverStyle.backgroundColor}
                     onMouseOut={e => e.target.style.backgroundColor = buttonStyle.backgroundColor}
                 >
                     Blog Page
-                </Link>
+                </button>
             </div>
 
             <div style={mainContentStyle}>
@@ -134,7 +131,6 @@ const ProfilePage = ({ profileUserId, loggedInUserId }) => {
                             <div style={sectionBoxStyle}>
                                 <h2 style={headingStyle}>{profileUser.username}’s Profile</h2>
                                 <p><strong>Email:</strong> {profileUser.email}</p>
-                                <p><strong>Role:</strong> {profileUser.role}</p>
                             </div>
                         )}
 

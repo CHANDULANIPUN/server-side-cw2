@@ -5,12 +5,10 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import FollowButton from './FollowButton';
 
 const HomePage = forwardRef((props, ref) => {
-  const navigate = useNavigate();
   const { currentUserId } = props;
 
   const [searchText, setSearchText] = useState('');
@@ -172,8 +170,7 @@ const HomePage = forwardRef((props, ref) => {
           : 'N/A'}
       </p>
       <p>
-        👍 Likes: {post.likes || 0} | 👎 Dislikes: {post.dislikes || 0} | 💬
-        Comments: {post.commentCount || 0}
+        👍 Likes: {post.likes || 0} | 👎 Dislikes: {post.dislikes || 0} 
       </p>
       <button style={likeButtonStyle} onClick={() => handleLike(post.id)}>
         👍 Like

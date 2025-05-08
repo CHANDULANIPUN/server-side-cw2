@@ -104,8 +104,19 @@ const Navbar = ({ apiKey, setApiKey, loggedInUserId, onSearch }) => {
                         Admin
                     </Link>
                 </li>
+
                 {apiKey && (
                     <>
+                        <li style={liStyle}>
+                            <Link
+                                to="/country"
+                                style={linkStyle}
+                                onMouseOver={(e) => (e.target.style.textDecoration = linkHoverStyle.textDecoration)}
+                                onMouseOut={(e) => (e.target.style.textDecoration = linkStyle.textDecoration)}
+                            >
+                                Country
+                            </Link>
+                        </li>
                         <li style={liStyle}>
                             <Link
                                 to={`/profile/${loggedInUserId}`}
