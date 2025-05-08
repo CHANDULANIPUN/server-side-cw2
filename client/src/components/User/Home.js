@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import FollowButton from './FollowButton';
@@ -6,57 +12,92 @@ import FollowButton from './FollowButton';
 const HomePage = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const { currentUserId } = props;
+
   const [searchText, setSearchText] = useState('');
-  const [blogs, setBlogs] = useState([]);
-  const [allPosts, setAllPosts] = useState([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchPage, setSearchPage] = useState(1);
+  const [searchTotalPages, setSearchTotalPages] = useState(1);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Expose search handler to Navbar via ref
+  const [allPosts, setAllPosts] = useState([]);
+  const [allLoading, setAllLoading] = useState(false);
+
   useImperativeHandle(ref, () => ({
     handleSearchFromNavbar(text) {
       setSearchText(text);
-      setPage(1);
+      setSearchPage(1);
       setHasSearched(true);
     },
   }));
 
-  // Fetch all posts on load
-  useEffect(() => {
-    axios
-      .get('http://localhost:5001/api/posts')
-      .then((res) => setAllPosts(res.data))
-      .catch((err) => console.error('Error fetching all posts:', err));
+  // Fetch all posts
+  const fetchAllPosts = useCallback(async () => {
+    setAllLoading(true);
+    try {
+      const res = await axios.get('http://localhost:5001/api/posts');
+      const posts = Array.isArray(res.data) ? res.data : res.data.posts || [];
+      setAllPosts(posts);
+    } catch (err) {
+      console.error('Error fetching all posts:', err);
+    } finally {
+      setAllLoading(false);
+    }
   }, []);
 
-  const fetchBlogs = useCallback(async () => {
-    if (!hasSearched) return;
+  useEffect(() => {
+    fetchAllPosts();
+  }, [fetchAllPosts]);
 
-    setLoading(true);
+  // Fetch search results
+  const fetchSearchResults = useCallback(async () => {
+    if (!hasSearched) return;
+    setSearchLoading(true);
     try {
       const res = await axios.get('http://localhost:5001/api/search', {
-        params: { query: searchText, page, limit: 5 }, // ✅ pass the full text under "query"
+        params: { query: searchText, page: searchPage, limit: 5 },
       });
-
-      setBlogs(res.data.posts);
-      setTotalPages(res.data.totalPages);
+      setSearchResults(res.data.posts || []);
+      setSearchTotalPages(res.data.totalPages || 1);
     } catch (err) {
-      console.error('Error fetching blogs:', err);
+      console.error('Error fetching search results:', err);
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
     }
-  }, [searchText, page, hasSearched]);
+  }, [searchText, searchPage, hasSearched]);
 
   useEffect(() => {
-    fetchBlogs();
-  }, [fetchBlogs]);
+    fetchSearchResults();
+  }, [fetchSearchResults]);
 
   const handleLearnClick = () => {
     navigate('/login');
   };
 
+  // Like/Dislike Handlers
+  const handleLike = async (postId) => {
+    try {
+      await axios.post(`http://localhost:5001/api/posts/${postId}/like`, {
+        userId: currentUserId,
+      });
+      hasSearched ? fetchSearchResults() : fetchAllPosts();
+    } catch (err) {
+      console.error('Error liking post:', err);
+    }
+  };
+
+  const handleDislike = async (postId) => {
+    try {
+      await axios.post(`http://localhost:5001/api/posts/${postId}/dislike`, {
+        userId: currentUserId,
+      });
+      hasSearched ? fetchSearchResults() : fetchAllPosts();
+    } catch (err) {
+      console.error('Error disliking post:', err);
+    }
+  };
+
+  // Styles
   const containerStyle = {
     textAlign: 'center',
     padding: '50px 20px',
@@ -73,6 +114,7 @@ const HomePage = forwardRef((props, ref) => {
     border: 'none',
     borderRadius: '5px',
     cursor: 'pointer',
+    marginBottom: '10px',
   };
 
   const postCardStyle = {
@@ -86,6 +128,53 @@ const HomePage = forwardRef((props, ref) => {
     margin: '20px auto',
     textAlign: 'left',
   };
+
+  const likeButtonStyle = {
+    padding: '8px 12px',
+    marginRight: '10px',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    backgroundColor: '#007BFF',
+    color: '#fff',
+  };
+
+  const dislikeButtonStyle = {
+    ...likeButtonStyle,
+    backgroundColor: '#dc3545',
+  };
+
+  const renderPost = (post) => (
+    <div key={post.id} style={postCardStyle}>
+      <h3>{post.title}</h3>
+      <p>{post.content}</p>
+      <p>
+        By <strong>{post.user_name}</strong>{' '}
+        {post.user_id && post.user_id !== currentUserId && (
+          <FollowButton
+            followerId={currentUserId}
+            followingId={post.user_id}
+            isInitiallyFollowing={post.isFollowing || false}
+          />
+        )}
+      </p>
+      <p>
+        Country: {post.country_name || 'N/A'} | Date:{' '}
+        {post.date_of_visit
+          ? new Date(post.date_of_visit).toLocaleDateString()
+          : 'N/A'}
+      </p>
+      <p>
+        👍 Likes: {post.likes || 0} | 👎 Dislikes: {post.dislikes || 0}
+      </p>
+      <button style={likeButtonStyle} onClick={() => handleLike(post.id)}>
+        👍 Like
+      </button>
+      <button style={dislikeButtonStyle} onClick={() => handleDislike(post.id)}>
+        👎 Dislike
+      </button>
+    </div>
+  );
 
   return (
     <div style={containerStyle}>
@@ -102,76 +191,59 @@ const HomePage = forwardRef((props, ref) => {
         {hasSearched ? (
           <div>
             <h2>Search Results</h2>
-            {loading ? (
+            {searchLoading ? (
               <p>Loading...</p>
-            ) : blogs.length === 0 ? (
+            ) : searchResults.length === 0 ? (
               <p>No blog posts found.</p>
             ) : (
-              blogs.map((blog) => (
-                <div key={blog.id} style={postCardStyle}>
-                  <h3>{blog.title}</h3>
-                  <p>{blog.content}</p>
-                  <p>
-                    By <strong>{blog.user_name}</strong> | {blog.country_name} |{' '}
-                    {new Date(blog.date_of_visit).toLocaleDateString()}
-                  </p>
-                </div>
-              ))
+              searchResults.map(renderPost)
             )}
 
+            {/* Pagination */}
             <div style={{ marginTop: '10px' }}>
               <button
-                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                disabled={page === 1}
+                onClick={() => setSearchPage((prev) => Math.max(prev - 1, 1))}
+                disabled={searchPage === 1}
                 style={{ marginRight: '10px' }}
               >
                 Previous
               </button>
               <span>
-                Page {page} of {totalPages}
+                Page {searchPage} of {searchTotalPages}
               </span>
               <button
-                onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={page === totalPages}
+                onClick={() =>
+                  setSearchPage((prev) => Math.min(prev + 1, searchTotalPages))
+                }
+                disabled={searchPage === searchTotalPages}
                 style={{ marginLeft: '10px' }}
               >
                 Next
               </button>
             </div>
+
+            <button
+              onClick={() => {
+                setHasSearched(false);
+                setSearchText('');
+                setSearchResults([]);
+              }}
+              style={{ ...buttonStyle, marginTop: '15px' }}
+            >
+              Clear Search
+            </button>
           </div>
         ) : (
           <div>
             <h2>All Blog Posts</h2>
-            {allPosts.length === 0 ? (
+            {allLoading ? (
+              <p>Loading...</p>
+            ) : allPosts.length === 0 ? (
               <p>No blog posts available.</p>
             ) : (
-              (allPosts.map((post) => (
-                <div key={post.id} style={postCardStyle}>
-                  <h3>{post.title}</h3>
-                  <p>{post.content}</p>
-                  <p>
-                    By <strong>{post.user_name}</strong>{' '}
-                    {post.user_id !== props.currentUserId && (
-                      <FollowButton
-                        followerId={currentUserId}   // logged-in user ID
-                        followingId={post.user_id}   // post author ID
-                        isInitiallyFollowing={post.isFollowing}  // comes from backend API
-                      />
-
-                    )}
-                  </p>
-                  <p>
-                    Country: {post.country_name || 'N/A'} | Date:{' '}
-                    {post.date_of_visit
-                      ? new Date(post.date_of_visit).toLocaleDateString()
-                      : 'N/A'}
-                  </p>
-                </div>
-              )))
-
+              allPosts.map(renderPost)
             )}
           </div>
-
         )}
       </div>
     </div>

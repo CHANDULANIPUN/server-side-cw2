@@ -1,4 +1,3 @@
-// components/BlogSidebar.js
 import React from 'react';
 
 const BlogSidebar = ({ setActive }) => {
@@ -51,11 +50,18 @@ const BlogSidebar = ({ setActive }) => {
     e.target.style.backgroundColor = '#0d0d0d';
   };
 
+  const actions = [
+    'create',
+    'update',
+    'delete',
+    'all',
+  ];
+
   return (
     <div style={sidebarStyle}>
       <h3 style={headingStyle}>Blog Actions</h3>
       <ul style={listStyle}>
-        {['create', 'update', 'delete', 'all', 'viewOne'].map((action) => (
+        {actions.map((action) => (
           <li key={action} style={listItemStyle}>
             <button
               onClick={() => setActive(action)}
@@ -65,8 +71,7 @@ const BlogSidebar = ({ setActive }) => {
             >
               {action === 'all'
                 ? 'View All Posts'
-                : action === 'viewOne'
-                ? 'View One Post'
+          
                 : `${action.charAt(0).toUpperCase() + action.slice(1)} Post`}
             </button>
           </li>

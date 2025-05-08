@@ -5,18 +5,21 @@ import CreatePost from './CreatePost.js';
 import UpdatePost from './UpdatePost.js';
 import DeletePost from './DeletePost.js';
 import AllPosts from './AllPosts.js';
-import ViewPost from './ViewPost.js';
+
 
 const BlogPage = () => {
   const [activeComponent, setActiveComponent] = useState('all');
 
   const renderComponent = () => {
     switch (activeComponent) {
-      case 'create': return <CreatePost />;
-      case 'update': return <UpdatePost />;
-      case 'delete': return <DeletePost />;
-      case 'viewOne': return <ViewPost />;
-      default: return <AllPosts />;
+      case 'create':
+        return <CreatePost />;
+      case 'update':
+        return <UpdatePost />;
+      case 'delete':
+        return <DeletePost />;
+      default:
+        return <AllPosts />;
     }
   };
 

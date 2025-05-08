@@ -17,41 +17,57 @@ class BlogDao {
     }
 
     // Update an existing blog post
-    static updatePost(postId, username, title, content, countryName, dateOfVisit, callback) {
+    static updatePost(postId, title, content, country_name, date_of_visit, callback) {
         const sql = `
             UPDATE blog
             SET title = ?, content = ?, country_name = ?, date_of_visit = ?
-            WHERE id = ? AND username = ?
+            WHERE id = ?
         `;
-        db.run(sql, [title, content, countryName, dateOfVisit, postId, username], function (err) {
+        db.run(sql, [title, content, country_name, date_of_visit, postId], function (err) {
             if (err) {
-                return callback(err); // Pass the error to the callback
+                return callback(err);
             }
-            callback(null, { message: 'Post updated successfully', changes: this.changes });
+            callback(null, this.changes);
         });
     }
 
+
     // Delete a blog post
-    static deletePost(postId, username, callback) {
-        const sql = `
-            DELETE FROM blog
-            WHERE id = ? AND username = ?
-        `;
-        db.run(sql, [postId, username], function (err) {
+    static deletePost(postId, callback) {
+        const sql = `DELETE FROM blog WHERE id = ?`;
+        db.run(sql, [postId], function (err) {
             if (err) {
-                return callback(err); // Pass the error to the callback
+                return callback(err);
             }
-            callback(null, { message: 'Post deleted successfully', changes: this.changes });
+            callback(null, this.changes);
         });
     }
+
 
     // Get all blog posts
     static getAllPosts(callback) {
-        const sql = `SELECT * FROM blog`;
+        const sql = `
+            SELECT 
+                b.*, 
+                COALESCE(SUM(CASE WHEN pl.is_like = 1 THEN 1 ELSE 0 END), 0) AS likes,
+                COALESCE(SUM(CASE WHEN pl.is_like = 0 THEN 1 ELSE 0 END), 0) AS dislikes
+            FROM blog b
+            LEFT JOIN post_likes pl ON b.id = pl.blog_id
+            GROUP BY b.id
+        `;
         db.all(sql, [], (err, rows) => {
             callback(err, rows);
         });
     }
+
+    static getPostsByUser(username, callback) {
+        const sql = `SELECT * FROM blog WHERE user_name = ?`;
+        db.all(sql, [username], (err, rows) => {
+            callback(err, rows);
+        });
+    }
+
+
 
     // Get a single blog post by ID
     static getPostById(postId, callback) {
@@ -62,53 +78,77 @@ class BlogDao {
     }
 
     // Serch by username and country name
-    static searchPosts(countryName, username, page, limit, callback) {
-        let sql = `
-            SELECT id, title, content, user_name, country_name, date_of_visit
-            FROM blog
-            WHERE 1=1
-        `;
-        const params = [];
-
-        if (countryName) {
-            sql += ' AND country_name LIKE ?';
-            params.push(`%${countryName}%`);
-        }
-
-        if (username) {
-            sql += ' AND user_name LIKE ?';
-            params.push(`%${username}%`);
-        }
-
-        sql += ' ORDER BY date_of_visit DESC LIMIT ? OFFSET ?';
+    static searchPosts(query, page, limit, callback) {
+        const searchTerm = `%${query}%`;
         const offset = (page - 1) * limit;
-        params.push(parseInt(limit), offset);
 
-        db.all(sql, params, (err, rows) => {
+        const dataSql = `
+            SELECT *
+            FROM blog
+            WHERE title LIKE ? OR content LIKE ? OR user_name LIKE ? OR country_name LIKE ?
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+        `;
+        const countSql = `
+            SELECT COUNT(*) as total
+            FROM blog
+            WHERE title LIKE ? OR content LIKE ? OR user_name LIKE ? OR country_name LIKE ?
+        `;
+
+        const params = [searchTerm, searchTerm, searchTerm, searchTerm, parseInt(limit), offset];
+        const countParams = [searchTerm, searchTerm, searchTerm, searchTerm];
+
+        db.get(countSql, countParams, (err, countResult) => {
             if (err) return callback(err);
 
-            // Count total matching posts for pagination
-            let countSql = `
-                SELECT COUNT(*) AS total
-                FROM blog
-                WHERE 1=1
-            `;
-            const countParams = [];
-            if (countryName) {
-                countSql += ' AND country_name LIKE ?';
-                countParams.push(`%${countryName}%`);
-            }
-            if (username) {
-                countSql += ' AND user_name LIKE ?';
-                countParams.push(`%${username}%`);
-            }
-
-            db.get(countSql, countParams, (err, countResult) => {
+            db.all(dataSql, params, (err, rows) => {
                 if (err) return callback(err);
                 callback(null, { posts: rows, total: countResult.total });
             });
         });
     }
+
+
+    static likePost(postId, userId, callback) {
+        const sql = `
+            INSERT INTO post_likes (user_id, blog_id, is_like)
+            VALUES (?, ?, 1)
+            ON CONFLICT(user_id, blog_id) DO UPDATE SET is_like = 1
+        `;
+        db.run(sql, [userId, postId], function (err) {
+            if (err) {
+                return callback(err);
+            }
+            callback(null, { message: 'Post liked successfully' });
+        });
+    }
+    static dislikePost(postId, userId, callback) {
+        const sql = `
+            INSERT INTO post_likes (user_id, blog_id, is_like)
+            VALUES (?, ?, 0)
+            ON CONFLICT(user_id, blog_id) DO UPDATE SET is_like = 0
+        `;
+        db.run(sql, [userId, postId], function (err) {
+            if (err) {
+                return callback(err);
+            }
+            callback(null, { message: 'Post disliked successfully' });
+        });
+    }
+
+    static isFollowing(followerId, followingId, callback) {
+        const sql = `
+            SELECT COUNT(*) AS count
+            FROM follows
+            WHERE follower_id = ? AND following_id = ?
+        `;
+        db.get(sql, [followerId, followingId], (err, row) => {
+            if (err) return callback(err);
+            callback(null, row.count > 0);
+        });
+    }
+
+
 
 }
 

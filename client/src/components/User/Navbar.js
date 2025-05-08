@@ -104,16 +104,6 @@ const Navbar = ({ apiKey, setApiKey, loggedInUserId, onSearch }) => {
                         Admin
                     </Link>
                 </li>
-                <li style={liStyle}>
-                    <Link
-                        to="/blog"
-                        style={linkStyle}
-                        onMouseOver={(e) => (e.target.style.textDecoration = linkHoverStyle.textDecoration)}
-                        onMouseOut={(e) => (e.target.style.textDecoration = linkStyle.textDecoration)}
-                    >
-                        Blog
-                    </Link>
-                </li>
                 {apiKey && (
                     <>
                         <li style={liStyle}>
@@ -133,7 +123,6 @@ const Navbar = ({ apiKey, setApiKey, loggedInUserId, onSearch }) => {
                 )}
             </ul>
 
-            {/* Search Section */}
             <div style={searchContainerStyle}>
                 <input
                     type="text"

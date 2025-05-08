@@ -1,5 +1,5 @@
 const express = require('express');
-const { createPost, updatePost, deletePost, getAllPosts, getPostById, searchPosts } = require('../controllers/blogController.js');
+const { createPost, updatePost, deletePost, getAllPosts, getPostById, searchPosts,likePost,dislikePost,getPostsByUser } = require('../controllers/blogController.js');
 
 const router = express.Router();
 
@@ -19,5 +19,12 @@ router.get('/posts', getAllPosts);
 router.get('/posts/:id', getPostById);
 
 router.get('/search', searchPosts);
+
+router.post('/posts/:id/like', likePost);
+
+router.post('/posts/:id/dislike', dislikePost);
+
+router.get('/posts/user/:username', getPostsByUser);
+
 
 module.exports = router;

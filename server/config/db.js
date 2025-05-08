@@ -53,7 +53,25 @@ db.serialize(() => {
         }
     });
 
-    
+    db.run(`CREATE TABLE IF NOT EXISTS post_likes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    blog_id INTEGER NOT NULL,
+    is_like INTEGER NOT NULL, -- 1 for like, 0 for dislike
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (blog_id) REFERENCES blog(id) ON DELETE CASCADE,
+    UNIQUE(user_id, blog_id) -- user can react only once per post
+)`, (err) => {
+        if (err) {
+            console.error('Error creating post_likes table:', err.message);
+        } else {
+            console.log('Post likes table created successfully.');
+        }
+    });
+
+
+
     db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
         if (err) {
             console.error('Error fetching tables:', err.message);

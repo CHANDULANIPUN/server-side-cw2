@@ -11,6 +11,7 @@ import AdminLogin from './components/User/AdminLogin';
 import AdminDashboard from './components/User/AdminDashboard';
 import BlogPage from './components/Blogs/BlogPage';
 import ProfilePage from './components/User/ProfilePage';
+import EditPost from './components/Blogs/EditPost';
 
 const ProfileRouteWrapper = ({ loggedInUserId }) => {
     const { userId } = useParams();
@@ -59,6 +60,7 @@ const App = () => {
                     <Route path="/admin-dashboard" element={<AdminDashboard />} />
                     <Route path="/blog" element={userId ? <BlogPage loggedInUserId={userId} /> : <p>Please log in to see blog</p>} />
                     <Route path="/profile/:userId" element={<ProfileRouteWrapper loggedInUserId={userId} />} />
+                    <Route path="/edit-post/:id" element={<EditPost />} />
                 </Routes>
             </div>
         </Router>

@@ -24,57 +24,58 @@ exports.createPost = async (req, res) => {
 
 exports.updatePost = async (req, res) => {
     const postId = req.params.id;
-    const { username, title, content, countryName, dateOfVisit } = req.body;
+    const { title, content, country_name, date_of_visit } = req.body;
 
-    if (!username || !title || !content || !countryName || !dateOfVisit) {
-        return res.status(400).json({ error: 'All fields are required' });
+    if (!title || !content || !country_name || !date_of_visit) {
+        return res.status(400).json({ error: 'All fields are required.' });
     }
 
     try {
-        const changes = await new Promise((resolve, reject) => {
-            BlogDao.updatePost(postId, username, title, content, countryName, dateOfVisit, (err, changes) => {
+        const result = await new Promise((resolve, reject) => {
+            BlogDao.updatePost(postId, title, content, country_name, date_of_visit, (err, changes) => {
                 if (err) return reject(err);
                 resolve(changes);
             });
         });
 
-        if (changes === 0) {
-            return res.status(404).json({ error: 'Post not found or not authorized' });
+        if (result === 0) {
+            return res.status(404).json({ error: 'Post not found or could not be updated.' });
         }
 
-        res.status(200).json({ message: 'Post updated' });
+        return res.status(200).json({ message: 'Post updated successfully.' });
     } catch (error) {
-        console.error('Error updating post:', error);
-        res.status(500).json({ error: 'Failed to update post' });
+        console.error(`Error updating post with ID ${postId}:`, error);
+        return res.status(500).json({ error: 'Internal server error.' });
     }
 };
+
 
 exports.deletePost = async (req, res) => {
     const postId = req.params.id;
-    const { username } = req.body;
-
-    if (!username) {
-        return res.status(400).json({ error: 'User name is required' });
-    }
 
     try {
-        const changes = await new Promise((resolve, reject) => {
-            BlogDao.deletePost(postId, username, (err, changes) => {
+        const result = await new Promise((resolve, reject) => {
+            BlogDao.deletePost(postId, (err, changes) => {
                 if (err) return reject(err);
                 resolve(changes);
             });
         });
 
-        if (changes === 0) {
-            return res.status(404).json({ error: 'Post not found or not authorized' });
+        if (result === 0) {
+            return res.status(404).json({
+                error: 'Post not found or could not be deleted.',
+            });
         }
 
-        res.status(200).json({ message: 'Post deleted' });
+        return res.status(200).json({ message: 'Post successfully deleted.' });
     } catch (error) {
-        console.error('Error deleting post:', error);
-        res.status(500).json({ error: 'Failed to delete post' });
+        console.error(`Error deleting post with ID ${postId}:`, error);
+        return res.status(500).json({
+            error: 'An internal server error occurred while deleting the post.',
+        });
     }
 };
+
 
 exports.getAllPosts = async (req, res) => {
     try {
@@ -91,6 +92,24 @@ exports.getAllPosts = async (req, res) => {
         res.status(500).json({ error: 'Failed to retrieve posts' });
     }
 };
+exports.getPostsByUser = async (req, res) => {
+    const username = req.params.username;
+
+    try {
+        const posts = await new Promise((resolve, reject) => {
+            BlogDao.getPostsByUser(username, (err, posts) => {
+                if (err) return reject(err);
+                resolve(posts);
+            });
+        });
+
+        res.status(200).json(posts);
+    } catch (error) {
+        console.error('Error retrieving user posts:', error);
+        res.status(500).json({ error: 'Failed to retrieve user posts' });
+    }
+};
+
 
 exports.getPostById = async (req, res) => {
     const postId = req.params.id;
@@ -115,11 +134,15 @@ exports.getPostById = async (req, res) => {
 };
 
 exports.searchPosts = async (req, res) => {
-    const { countryName, username, page = 1, limit = 10 } = req.query;
+    const { query, page = 1, limit = 10 } = req.query;
+
+    if (!query) {
+        return res.status(400).json({ error: 'Query parameter is required' });
+    }
 
     try {
         const result = await new Promise((resolve, reject) => {
-            BlogDao.searchPosts(countryName, username, page, limit, (err, data) => {
+            BlogDao.searchPosts(query, page, limit, (err, data) => {
                 if (err) return reject(err);
                 resolve(data);
             });
@@ -130,10 +153,93 @@ exports.searchPosts = async (req, res) => {
             posts: result.posts,
             total: result.total,
             page: parseInt(page),
-            totalPages: Math.ceil(result.total / limit)
+            totalPages: Math.ceil(result.total / limit),
         });
     } catch (error) {
         console.error('Error searching posts:', error);
         res.status(500).json({ error: 'Failed to search posts' });
     }
 };
+
+exports.likePost = async (req, res) => {
+    const postId = req.params.id;
+    const { userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    try {
+        const result = await new Promise((resolve, reject) => {
+            BlogDao.likePost(postId, userId, (err, data) => {
+                if (err) return reject(err);
+                resolve(data);
+            });
+        });
+
+        res.status(200).json({ message: 'Post liked', data: result });
+    } catch (error) {
+        console.error('Error liking post:', error);
+        res.status(500).json({ error: 'Failed to like post' });
+    }
+};
+
+exports.dislikePost = async (req, res) => {
+    const postId = req.params.id;
+    const { userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    try {
+        const result = await new Promise((resolve, reject) => {
+            BlogDao.dislikePost(postId, userId, (err, data) => {
+                if (err) return reject(err);
+                resolve(data);
+            });
+        });
+
+        res.status(200).json({ message: 'Post disliked', data: result });
+    } catch (error) {
+        console.error('Error disliking post:', error);
+        res.status(500).json({ error: 'Failed to dislike post' });
+    }
+};
+
+exports.getUserPosts = async (req, res) => {
+    const username = req.params.username;
+    const currentUserId = req.query.currentUserId; 
+
+    try {
+        const posts = await new Promise((resolve, reject) => {
+            BlogDao.getPostsByUsername(username, (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+
+        
+        const enrichedPosts = await Promise.all(posts.map(async (post) => {
+            if (!currentUserId) {
+                return { ...post, isFollowing: false }; 
+            }
+
+            const isFollowing = await new Promise((resolve, reject) => {
+                BlogDao.isFollowing(currentUserId, post.user_id, (err, result) => {
+                    if (err) return reject(err);
+                    resolve(result);
+                });
+            });
+
+            return { ...post, isFollowing };
+        }));
+
+        res.status(200).json(enrichedPosts);
+    } catch (error) {
+        console.error('Error fetching user posts:', error);
+        res.status(500).json({ error: 'Failed to fetch user posts' });
+    }
+};
+
+
