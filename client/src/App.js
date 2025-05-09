@@ -11,6 +11,7 @@ import AdminDashboard from './components/User/AdminDashboard';
 import ProfilePage from './components/User/ProfilePage';
 import EditPost from './components/Blogs/EditPost';
 import Country from './components/User/Country';
+import CreatePost from './components/Blogs/CreatePost';
 
 
 const ProfileRouteWrapper = ({ loggedInUserId }) => {
@@ -57,6 +58,8 @@ const App = () => {
                     <Route path="/profile/:userId" element={<ProfileRouteWrapper loggedInUserId={userId} />} />
                     <Route path="/edit-post/:id" element={<EditPost />} />
                     <Route path="/country" element={<Country />} />
+                    <Route path="/create-post" element={<CreatePost />} />
+
 
                 </Routes>
             </div>

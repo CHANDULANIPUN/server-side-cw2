@@ -15,7 +15,7 @@ const Login = ({ setApiKey, setUserId }) => {
             const response = await axios.post('http://localhost:5001/api/login', { username, email, password });
 
             const apiKey = response.data.apiKey;
-            const userId = response.data.userId; // ✅ make sure backend sends this
+            const userId = response.data.userId; 
 
             setApiKey(apiKey);
             setUserId(userId);
