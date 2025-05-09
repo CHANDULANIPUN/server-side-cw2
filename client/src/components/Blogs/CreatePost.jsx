@@ -3,6 +3,7 @@ import axios from 'axios';
 
 const CreatePost = () => {
   const [formData, setFormData] = useState({
+    userId:'',
     username: '',
     title: '',
     content: '',
@@ -92,7 +93,7 @@ const CreatePost = () => {
     <div style={containerStyle}>
       <form onSubmit={handleSubmit} style={formStyle}>
         <h2 style={headingStyle}>Create Blog Post</h2>
-        {['username', 'title', 'content', 'countryName', 'dateOfVisit'].map((field) => (
+        {['userId', 'username', 'title', 'content', 'countryName', 'dateOfVisit'].map((field) => (
           <div key={field}>
             <label style={labelStyle}>
               {field.charAt(0).toUpperCase() + field.slice(1)}:

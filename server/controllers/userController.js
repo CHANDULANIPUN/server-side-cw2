@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'default_secret';
 exports.registerUser = async (req, res) => {
     const { username, email, password, role } = req.body;
 
-    if (!username|| !email || !password) {
+    if (!username || !email || !password) {
         return res.status(400).json({ error: 'Please add all fields' });
     }
 
@@ -60,11 +60,11 @@ exports.loginUser = async (req, res) => {
 
         await UserDao.updateApiKey(user.email, apiKey);
 
-        
+
         res.status(200).json({
             message: 'Login successful',
             apiKey,
-            userId: user.id, 
+            userId: user.id,
         });
     } catch (error) {
         console.error('Error during login:', error);
@@ -72,7 +72,7 @@ exports.loginUser = async (req, res) => {
     }
 };
 
-exports.logoutUser  = async (req, res) => {
+exports.logoutUser = async (req, res) => {
     console.log('Received body:', req.body);
     const { apiKey } = req.body;
 
@@ -246,16 +246,20 @@ exports.getAllCountries = async (req, res) => {
 
 
 exports.followUser = async (req, res) => {
-    const { followerId, followingId } = req.body;    
+    const { followerId, followingId } = req.body;
 
     if (!followerId || !followingId) {
         return res.status(400).json({ error: 'Follower ID and following ID are required' });
     }
 
+    if (followerId === followingId) {
+        return res.status(400).json({ error: 'Cannot follow yourself' });
+    }
+
     try {
         const alreadyFollowing = await UserDao.isFollowing(followerId, followingId);
         if (alreadyFollowing) {
-            return res.status(400).json({ error: 'Already following this user' });
+            return res.status(200).json({ message: 'Already following, no change' });
         }
 
         await UserDao.followUser(followerId, followingId);
@@ -274,6 +278,11 @@ exports.unfollowUser = async (req, res) => {
     }
 
     try {
+        const alreadyFollowing = await UserDao.isFollowing(followerId, followingId);
+        if (!alreadyFollowing) {
+            return res.status(200).json({ message: 'Not following, no change' });
+        }
+
         await UserDao.unfollowUser(followerId, followingId);
         res.status(200).json({ message: 'Unfollowed successfully' });
     } catch (error) {
@@ -310,14 +319,19 @@ exports.getFollowing = async (req, res) => {
 exports.getFollowingFeed = async (req, res) => {
     const { userId } = req.params;
 
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+    }
+
     try {
         const posts = await UserDao.getFeedPosts(userId);
-        res.status(200).json({ posts });
+        res.status(200).json(posts); // return the array directly
     } catch (error) {
         console.error('Error getting following feed:', error);
         res.status(500).json({ error: 'Failed to get following feed' });
     }
 };
+
 
 exports.getUserById = async (req, res) => {
     const userId = req.params.userId;

@@ -3,13 +3,13 @@ import axios from 'axios';
 import UserPosts from '../Blogs/userPosts';
 import { useNavigate } from 'react-router-dom';
 
-
-const ProfilePage = ({ profileUserId}) => {
+const ProfilePage = ({ profileUserId }) => {
   const navigate = useNavigate();
 
   const [profileUser, setProfileUser] = useState(null);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
+  const [feedPosts, setFeedPosts] = useState([]);
   const [activeSection, setActiveSection] = useState('overview');
 
   useEffect(() => {
@@ -120,13 +120,25 @@ const ProfilePage = ({ profileUserId}) => {
         </button>
         <button
           style={buttonStyle}
-          onClick={() => navigate('/create-post')}  
+          onClick={() => {
+            setActiveSection('feed');
+            axios.get(`http://localhost:5001/api/following-feed/${profileUserId}`)
+              .then(res => setFeedPosts(res.data))
+              .catch(err => console.error('Error fetching following feed:', err));
+          }}
           onMouseOver={e => e.target.style.backgroundColor = buttonHoverStyle.backgroundColor}
           onMouseOut={e => e.target.style.backgroundColor = buttonStyle.backgroundColor}
         >
-          Blog Page
+          Following Feed
         </button>
-
+        <button
+          style={buttonStyle}
+          onClick={() => navigate('/create-post')}
+          onMouseOver={e => e.target.style.backgroundColor = buttonHoverStyle.backgroundColor}
+          onMouseOut={e => e.target.style.backgroundColor = buttonStyle.backgroundColor}
+        >
+         Create New Post
+        </button>
       </div>
 
       <div style={mainContentStyle}>
@@ -164,6 +176,31 @@ const ProfilePage = ({ profileUserId}) => {
             {activeSection === 'posts' && (
               <div style={sectionBoxStyle}>
                 <UserPosts currentUsername={profileUser.username} />
+              </div>
+            )}
+
+            {activeSection === 'feed' && (
+              <div style={sectionBoxStyle}>
+                <h3 style={headingStyle}>Posts from Users You Follow</h3>
+                {feedPosts.length === 0 ? (
+                  <p>No posts from followed users yet.</p>
+                ) : (
+                  feedPosts.map((post) => (
+                    <div key={post.id} style={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #ccc',
+                      borderRadius: '8px',
+                      padding: '15px',
+                      marginBottom: '15px'
+                    }}>
+                      <h4>{post.title}</h4>
+                      <p>{post.content}</p>
+                      <p style={{ fontSize: '0.9em', color: '#666' }}>
+                        By {post.user_name} on {new Date(post.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </>

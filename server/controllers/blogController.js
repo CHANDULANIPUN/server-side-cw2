@@ -1,15 +1,15 @@
 const BlogDao = require('../dao/blogDao');
 
 exports.createPost = async (req, res) => {
-    const { username, title, content, countryName, dateOfVisit } = req.body;
+    const { userId, username, title, content, countryName, dateOfVisit } = req.body;
 
-    if (!username || !title || !content || !countryName || !dateOfVisit) {
+    if (!userId || !username || !title || !content || !countryName || !dateOfVisit) {
         return res.status(400).json({ error: 'All fields are required' });
     }
 
     try {
         const postId = await new Promise((resolve, reject) => {
-            BlogDao.createPost(username, title, content, countryName, dateOfVisit, (err, postId) => {
+            BlogDao.createPost(userId, username, title, content, countryName, dateOfVisit, (err, postId) => {
                 if (err) return reject(err);
                 resolve(postId);
             });
@@ -79,19 +79,22 @@ exports.deletePost = async (req, res) => {
 
 exports.getAllPosts = async (req, res) => {
     try {
+        const currentUserId = Number(req.query.currentUserId);
+
         const posts = await new Promise((resolve, reject) => {
-            BlogDao.getAllPosts((err, posts) => {
+            BlogDao.getAllPosts(currentUserId, (err, posts) => {
                 if (err) return reject(err);
                 resolve(posts);
             });
         });
 
-        res.status(200).json(posts);
+        res.status(200).json(posts || []);
     } catch (error) {
         console.error('Error retrieving posts:', error);
         res.status(500).json({ error: 'Failed to retrieve posts' });
     }
 };
+
 exports.getPostsByUser = async (req, res) => {
     const username = req.params.username;
 
@@ -207,23 +210,20 @@ exports.dislikePost = async (req, res) => {
     }
 };
 
-exports.getSortedPosts = async (req, res) => {
-    const { sortBy } = req.query;
+exports.getAllPostsSorted = async (req, res) => {
+    const { sortBy } = req.query; // ?sortBy=newest or ?sortBy=mostLiked
 
     try {
-        const posts = await new Promise((resolve, reject) => {
-            BlogDao.getSortedPosts(sortBy, (err, data) => {
-                if (err) return reject(err);
-                resolve(data);
-            });
-        });
-
+        const posts = await BlogDao.getAllPostsSorted(sortBy);
         res.status(200).json(posts);
     } catch (error) {
-        console.error('Error fetching sorted posts:', error);
-        res.status(500).json({ error: 'Failed to fetch sorted posts' });
+        console.error('Error retrieving sorted posts:', error);
+        res.status(500).json({ error: 'Failed to retrieve sorted posts' });
     }
 };
+
+
+
 
 
 

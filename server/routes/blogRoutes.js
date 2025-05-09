@@ -1,5 +1,5 @@
 const express = require('express');
-const { createPost, updatePost, deletePost, getAllPosts, getPostById, searchPosts,likePost,dislikePost,getPostsByUser,getSortedPosts } = require('../controllers/blogController.js');
+const { createPost, updatePost, deletePost, getAllPosts, getPostById, searchPosts,likePost,dislikePost,getPostsByUser,getAllPostsSorted } = require('../controllers/blogController.js');
 
 const router = express.Router();
 
@@ -27,7 +27,8 @@ router.post('/posts/:id/dislike', dislikePost);
 router.get('/posts/user/:username', getPostsByUser);
 
 
-router.get('/posts/sorted', getSortedPosts);
+router.get('/posts', getAllPostsSorted);
+
 
 
 

@@ -2,9 +2,9 @@ const db = require('../config/db');
 const User = require('../models/userModel');
 
 class UserDao {
-    static createUser (username, email, password, role = 'user') {
+    static createUser(username, email, password, role = 'user') {
         return new Promise((resolve, reject) => {
-            if (!username || !email|| !password) {
+            if (!username || !email || !password) {
                 return reject(new Error('Invalid input: username email and password are required'));
             }
 
@@ -28,7 +28,7 @@ class UserDao {
                     console.error(`Error fetching user: ${err.message}`);
                     return reject(err);
                 }
-                resolve(row); 
+                resolve(row);
             });
         });
     }
@@ -38,25 +38,25 @@ class UserDao {
             if (!email) {
                 return reject(new Error('Invalid input: email is required'));
             }
-    
+
             const sql = "SELECT id, username, email, password, api_key, role FROM users WHERE email = ?";
-    
+
             db.get(sql, [email], (err, row) => {
                 if (err) {
                     console.error(`Database error while fetching user by email: ${err.message}`);
                     return reject(new Error('Failed to fetch user by email'));
                 }
-    
+
                 if (!row) {
                     console.warn(`No user found with email: ${email}`);
                     return resolve(null); // Resolve null if no user is found
                 }
-    
+
                 resolve(row); // Return the user row if found
             });
         });
     }
-    
+
 
     static getUserByApiKey(apiKey) {
         return new Promise((resolve, reject) => {
@@ -80,19 +80,19 @@ class UserDao {
             if (!email || !newApiKey) {
                 return reject(new Error('Invalid input: email and newApiKey are required'));
             }
-    
+
             const sql = `UPDATE users SET api_key = ? WHERE email = ?`;
             db.run(sql, [newApiKey, email], function (err) {
                 if (err) {
                     console.error(`Failed to update API key for user ${email}: ${err.message}`);
                     return reject(new Error('Failed to update API key'));
                 }
-    
+
                 if (this.changes === 0) {
                     console.error(`No user found with email: ${email}`);
                     return reject(new Error(`No user found with email: ${email}`));
                 }
-    
+
                 console.log(`API key updated for user ${email}`);
                 resolve(this.changes); // Resolve with the number of changes
             });
@@ -180,12 +180,12 @@ class UserDao {
     static getFeedPosts(userId) {
         return new Promise((resolve, reject) => {
             const sql = `
-                SELECT blog.* 
-                FROM blog 
-                JOIN users ON blog.user_name = users.username
-                JOIN follows ON follows.following_id = users.id
-                WHERE follows.follower_id = ?
-                ORDER BY blog.created_at DESC
+                SELECT b.*, u.username AS user_name
+                FROM blog b
+                JOIN follows f ON b.user_id = f.following_id
+                JOIN users u ON b.user_id = u.id
+                WHERE f.follower_id = ?
+                ORDER BY b.created_at DESC
             `;
             db.all(sql, [userId], (err, rows) => {
                 if (err) return reject(err);
@@ -193,6 +193,8 @@ class UserDao {
             });
         });
     }
+    
+
 
     static getUserById(userId) {
         return new Promise((resolve, reject) => {
@@ -200,26 +202,26 @@ class UserDao {
             if (!userId) {
                 return reject(new Error('Invalid input: userId is required'));
             }
-    
+
             const sql = "SELECT id, username, email FROM users WHERE id = ?";
-    
+
             db.get(sql, [userId], (err, row) => {
                 if (err) {
                     console.error(`Database error while fetching user by id: ${err.message}`);
                     return reject(new Error('Failed to fetch user by id'));
                 }
-    
+
                 if (!row) {
                     console.warn(`No user found with id: ${userId}`);
                     return resolve(null);
                 }
-    
+
                 resolve(row);
             });
         });
     }
-    
-    
+
+
 }
 
 

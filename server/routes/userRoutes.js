@@ -21,7 +21,9 @@ router.post('/unfollow', unfollowUser);
 
 router.get('/user/:userId/followers', getFollowers);
 router.get('/user/:userId/following', getFollowing);
-router.get('/user/:userId/feed', getFollowingFeed);
+
+router.get('/following-feed/:userId', getFollowingFeed);
+
 
 
 router.get('/user/:userId', getUserById);
