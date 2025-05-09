@@ -77,7 +77,7 @@ exports.deletePost = async (req, res) => {
 };
 
 
-exports.getAllPosts = async (req, res) => {
+/*exports.getAllPosts = async (req, res) => {
     try {
         const currentUserId = Number(req.query.currentUserId);
 
@@ -93,7 +93,7 @@ exports.getAllPosts = async (req, res) => {
         console.error('Error retrieving posts:', error);
         res.status(500).json({ error: 'Failed to retrieve posts' });
     }
-};
+};*/
 
 exports.getPostsByUser = async (req, res) => {
     const username = req.params.username;
@@ -210,17 +210,19 @@ exports.dislikePost = async (req, res) => {
     }
 };
 
-exports.getAllPostsSorted = async (req, res) => {
-    const { sortBy } = req.query; // ?sortBy=newest or ?sortBy=mostLiked
-
+exports.getAllPosts = async (req, res) => {
+    const { sortBy } = req.query;
+    const currentUserId = Number(req.query.currentUserId) || 0;
+  
     try {
-        const posts = await BlogDao.getAllPostsSorted(sortBy);
-        res.status(200).json(posts);
+      const posts = await BlogDao.getAllPosts({ currentUserId, sortBy });
+      res.status(200).json(posts);
     } catch (error) {
-        console.error('Error retrieving sorted posts:', error);
-        res.status(500).json({ error: 'Failed to retrieve sorted posts' });
+      console.error('Error retrieving posts:', error);
+      res.status(500).json({ error: 'Failed to retrieve posts' });
     }
-};
+  };
+
 
 
 

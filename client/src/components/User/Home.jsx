@@ -33,7 +33,9 @@ const HomePage = forwardRef((props, ref) => {
   const fetchAllPosts = useCallback(async () => {
     setAllLoading(true);
     try {
-      const res = await axios.get('http://localhost:5001/api/posts');
+      const res = await axios.get('http://localhost:5001/api/posts', {
+        params: { sortBy: sortOption },
+      });
       const posts = Array.isArray(res.data) ? res.data : res.data.posts || [];
       setAllPosts(posts);
     } catch (err) {
@@ -41,11 +43,13 @@ const HomePage = forwardRef((props, ref) => {
     } finally {
       setAllLoading(false);
     }
-  }, []);
+  }, [sortOption]);
 
   useEffect(() => {
-    fetchAllPosts();
-  }, [fetchAllPosts]);
+    if (!hasSearched) {
+      fetchAllPosts();
+    }
+  }, [fetchAllPosts, hasSearched]);
 
   const fetchSearchResults = useCallback(async () => {
     if (!hasSearched) return;
@@ -67,7 +71,6 @@ const HomePage = forwardRef((props, ref) => {
     fetchSearchResults();
   }, [fetchSearchResults]);
 
-  
   const handleLike = async (postId) => {
     try {
       await axios.post(`http://localhost:5001/api/posts/${postId}/like`, {
@@ -88,19 +91,6 @@ const HomePage = forwardRef((props, ref) => {
     } catch (err) {
       console.error('Error disliking post:', err);
     }
-  };
-
-  const sortPosts = (posts) => {
-    return [...posts].sort((a, b) => {
-      if (sortOption === 'newest') {
-        return new Date(b.date_of_visit) - new Date(a.date_of_visit);
-      } else if (sortOption === 'mostLiked') {
-        return (b.likes || 0) - (a.likes || 0);
-      } else if (sortOption === 'mostCommented') {
-        return (b.commentCount || 0) - (a.commentCount || 0);
-      }
-      return 0;
-    });
   };
 
   const containerStyle = {
@@ -159,7 +149,7 @@ const HomePage = forwardRef((props, ref) => {
           <FollowButton
             followerId={currentUserId}
             followingId={post.user_id}
-            isInitiallyFollowing={post.isFollowing || false}
+            initialIsFollowing={post.isFollowing || false}
           />
         )}
       </p>
@@ -170,7 +160,7 @@ const HomePage = forwardRef((props, ref) => {
           : 'N/A'}
       </p>
       <p>
-        👍 Likes: {post.likes || 0} | 👎 Dislikes: {post.dislikes || 0} 
+        👍 Likes: {post.likes || 0} | 👎 Dislikes: {post.dislikes || 0}
       </p>
       <button style={likeButtonStyle} onClick={() => handleLike(post.id)}>
         👍 Like
@@ -188,18 +178,19 @@ const HomePage = forwardRef((props, ref) => {
         Discover detailed information about countries around the world. Our app
         provides comprehensive data on geography, population, economy, and more.
       </p>
-      <div style={{ marginTop: '20px', marginBottom: '20px' }}>
-        <label htmlFor="sort">Sort by: </label>
-        <select
-          id="sort"
-          value={sortOption}
-          onChange={(e) => setSortOption(e.target.value)}
-        >
-          <option value="newest">Newest</option>
-          <option value="mostLiked">Most Liked</option>
-          <option value="mostCommented">Most Commented</option>
-        </select>
-      </div>
+      {!hasSearched && (
+        <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+          <label htmlFor="sort">Sort by: </label>
+          <select
+            id="sort"
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+          >
+            <option value="newest">Newest</option>
+            <option value="mostLiked">Most Liked</option>
+          </select>
+        </div>
+      )}
 
       <div style={{ marginTop: '40px' }}>
         {hasSearched ? (
@@ -210,7 +201,7 @@ const HomePage = forwardRef((props, ref) => {
             ) : searchResults.length === 0 ? (
               <p>No blog posts found.</p>
             ) : (
-              sortPosts(searchResults).map(renderPost)
+              searchResults.map(renderPost)
             )}
             <div style={{ marginTop: '10px' }}>
               <button
@@ -254,7 +245,7 @@ const HomePage = forwardRef((props, ref) => {
             ) : allPosts.length === 0 ? (
               <p>No blog posts available.</p>
             ) : (
-              sortPosts(allPosts).map(renderPost)
+              allPosts.map(renderPost)
             )}
           </div>
         )}

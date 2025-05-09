@@ -45,7 +45,7 @@ class BlogDao {
 
 
     // Get all blog posts
-    static getAllPosts(currentUserId, callback) {
+    /*static getAllPosts(currentUserId, callback) {
         const sql = `
             SELECT 
                 b.id,
@@ -77,7 +77,7 @@ class BlogDao {
                 console.error('No callback provided to getAllPosts');
             }
         });
-    }
+    }*/
 
     static getPostsByUser(username, callback) {
         const sql = `SELECT * FROM blog WHERE user_name = ?`;
@@ -153,47 +153,56 @@ class BlogDao {
         });
     }
 
-    static getAllPostsSorted(sortBy) {
-        let orderClause = 'ORDER BY b.created_at DESC'; // default
-    
+    static getAllPosts({ currentUserId = 0, sortBy = 'newest' } = {}) {
+        // choose correct ORDER BY clause:
+        let orderClause;
         if (sortBy === 'mostLiked') {
-            orderClause = 'ORDER BY IFNULL(like_counts.likes, 0) DESC';
+          orderClause = 'ORDER BY counts.likes DESC, b.created_at DESC';
+        } else {
+          // default & also covers sortBy==='newest'
+          orderClause = 'ORDER BY b.created_at DESC';
         }
     
         const sql = `
-            SELECT 
-                b.id,
-                b.title,
-                b.content,
-                b.user_id,
-                u.username AS user_name,
-                b.date_of_visit,
-                b.country_name,
-                IFNULL(like_counts.likes, 0) AS likes,
-                IFNULL(like_counts.dislikes, 0) AS dislikes
-            FROM blog b
-            JOIN users u ON b.user_id = u.id
-            LEFT JOIN (
-                SELECT
-                    pl.blog_id,
-                    SUM(CASE WHEN pl.is_like = 1 THEN 1 ELSE 0 END) AS likes,
-                    SUM(CASE WHEN pl.is_like = 0 THEN 1 ELSE 0 END) AS dislikes
-                FROM post_likes pl
-                GROUP BY pl.blog_id
-            ) AS like_counts ON like_counts.blog_id = b.id
-            ${orderClause}
+          SELECT
+            b.id,
+            b.title,
+            b.content,
+            b.user_id,
+            u.username   AS user_name,
+            b.date_of_visit,
+            b.country_name,
+            COALESCE(counts.likes,    0) AS likes,
+            COALESCE(counts.dislikes, 0) AS dislikes,
+            CASE WHEN EXISTS(
+              SELECT 1 FROM follows f
+              WHERE f.follower_id = ? AND f.following_id = b.user_id
+            ) THEN 1 ELSE 0 END         AS isFollowing
+          FROM blog b
+          JOIN users u      ON b.user_id = u.id
+          LEFT JOIN (
+            SELECT
+              pl.blog_id,
+              SUM(CASE WHEN pl.is_like = 1 THEN 1 ELSE 0 END) AS likes,
+              SUM(CASE WHEN pl.is_like = 0 THEN 1 ELSE 0 END) AS dislikes
+            FROM post_likes pl
+            GROUP BY pl.blog_id
+          ) AS counts
+            ON counts.blog_id = b.id
+          ${orderClause}
         `;
     
         return new Promise((resolve, reject) => {
-            db.all(sql, [], (err, rows) => {
-                if (err) return reject(err);
-                resolve(rows);
-            });
+          db.all(sql, [currentUserId], (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows);
+          });
         });
-    }
+      }
     
-    
-    
+
+
+
 }
 
 module.exports = BlogDao;
