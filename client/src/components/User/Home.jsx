@@ -93,6 +93,7 @@ const HomePage = forwardRef((props, ref) => {
     }
   };
 
+  // Styles
   const containerStyle = {
     textAlign: 'center',
     padding: '50px 20px',
@@ -139,6 +140,36 @@ const HomePage = forwardRef((props, ref) => {
     backgroundColor: '#dc3545',
   };
 
+  // New sort styles
+  const sortContainerStyle = {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: '30px 0',
+    padding: '10px',
+    backgroundColor: '#ffffff',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    maxWidth: '400px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+  };
+
+  const sortLabelStyle = {
+    fontSize: '1em',
+    color: '#333',
+    marginRight: '10px',
+  };
+
+  const selectStyle = {
+    padding: '8px 12px',
+    fontSize: '1em',
+    borderRadius: '4px',
+    border: '1px solid #ccc',
+    backgroundColor: '#f9f9f9',
+    cursor: 'pointer',
+  };
+
   const renderPost = (post) => (
     <div key={post.id} style={postCardStyle}>
       <h3>{post.title}</h3>
@@ -165,7 +196,10 @@ const HomePage = forwardRef((props, ref) => {
       <button style={likeButtonStyle} onClick={() => handleLike(post.id)}>
         👍 Like
       </button>
-      <button style={dislikeButtonStyle} onClick={() => handleDislike(post.id)}>
+      <button
+        style={dislikeButtonStyle}
+        onClick={() => handleDislike(post.id)}
+      >
         👎 Dislike
       </button>
     </div>
@@ -178,13 +212,17 @@ const HomePage = forwardRef((props, ref) => {
         Discover detailed information about countries around the world. Our app
         provides comprehensive data on geography, population, economy, and more.
       </p>
+
       {!hasSearched && (
-        <div style={{ marginTop: '20px', marginBottom: '20px' }}>
-          <label htmlFor="sort">Sort by: </label>
+        <div style={sortContainerStyle}>
+          <label htmlFor="sort" style={sortLabelStyle}>
+            Sort by:
+          </label>
           <select
             id="sort"
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value)}
+            style={selectStyle}
           >
             <option value="newest">Newest</option>
             <option value="mostLiked">Most Liked</option>
@@ -205,7 +243,7 @@ const HomePage = forwardRef((props, ref) => {
             )}
             <div style={{ marginTop: '10px' }}>
               <button
-                onClick={() => setSearchPage((prev) => Math.max(prev - 1, 1))}
+                onClick={() => setSearchPage((p) => Math.max(p - 1, 1))}
                 disabled={searchPage === 1}
                 style={{ marginRight: '10px' }}
               >
@@ -216,9 +254,7 @@ const HomePage = forwardRef((props, ref) => {
               </span>
               <button
                 onClick={() =>
-                  setSearchPage((prev) =>
-                    Math.min(prev + 1, searchTotalPages)
-                  )
+                  setSearchPage((p) => Math.min(p + 1, searchTotalPages))
                 }
                 disabled={searchPage === searchTotalPages}
                 style={{ marginLeft: '10px' }}

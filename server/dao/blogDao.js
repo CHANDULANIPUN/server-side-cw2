@@ -1,7 +1,6 @@
 const db = require('../config/db');
 
 class BlogDao {
-    // Create a new blog post
     static createPost(userId, username, title, content, countryName, dateOfVisit, callback) {
         const sql = `
             INSERT INTO blog (user_id, user_name, title, content, country_name, date_of_visit)
@@ -9,9 +8,8 @@ class BlogDao {
         `;
         db.run(sql, [userId, username, title, content, countryName, dateOfVisit], function (err) {
             if (err) {
-                return callback(err); // Pass the error to the callback
+                return callback(err); 
             }
-            // Instead of returning lastID, just return a success message
             callback(null, { message: 'Post created successfully' });
         });
     }
@@ -30,9 +28,6 @@ class BlogDao {
             callback(null, this.changes);
         });
     }
-
-
-    // Delete a blog post
     static deletePost(postId, callback) {
         const sql = `DELETE FROM blog WHERE id = ?`;
         db.run(sql, [postId], function (err) {
@@ -42,43 +37,6 @@ class BlogDao {
             callback(null, this.changes);
         });
     }
-
-
-    // Get all blog posts
-    /*static getAllPosts(currentUserId, callback) {
-        const sql = `
-            SELECT 
-                b.id,
-                b.title,
-                b.content,
-                b.user_id,
-                u.username AS user_name,
-                b.date_of_visit,
-                b.country_name,
-                COALESCE(SUM(CASE WHEN pl.is_like = 1 THEN 1 ELSE 0 END), 0) AS likes,
-                COALESCE(SUM(CASE WHEN pl.is_like = 0 THEN 1 ELSE 0 END), 0) AS dislikes,
-                CASE 
-                    WHEN EXISTS (
-                        SELECT 1 
-                        FROM follows f 
-                        WHERE f.follower_id = ? AND f.following_id = b.user_id
-                    ) THEN 1 ELSE 0
-                END AS isFollowing
-            FROM blog b
-            LEFT JOIN users u ON b.user_id = u.id
-            LEFT JOIN post_likes pl ON b.id = pl.blog_id
-            GROUP BY b.id, b.title, b.content, b.user_id, u.username, b.date_of_visit, b.country_name
-        `;
-
-        db.all(sql, [currentUserId], (err, rows) => {
-            if (callback) {
-                callback(err, rows);
-            } else {
-                console.error('No callback provided to getAllPosts');
-            }
-        });
-    }*/
-
     static getPostsByUser(username, callback) {
         const sql = `SELECT * FROM blog WHERE user_name = ?`;
         db.all(sql, [username], (err, rows) => {
@@ -154,15 +112,13 @@ class BlogDao {
     }
 
     static getAllPosts({ currentUserId = 0, sortBy = 'newest' } = {}) {
-        // choose correct ORDER BY clause:
         let orderClause;
         if (sortBy === 'mostLiked') {
-          orderClause = 'ORDER BY counts.likes DESC, b.created_at DESC';
+            orderClause = 'ORDER BY counts.likes DESC, b.created_at DESC';
         } else {
-          // default & also covers sortBy==='newest'
-          orderClause = 'ORDER BY b.created_at DESC';
+            orderClause = 'ORDER BY b.created_at DESC';
         }
-    
+
         const sql = `
           SELECT
             b.id,
@@ -191,18 +147,14 @@ class BlogDao {
             ON counts.blog_id = b.id
           ${orderClause}
         `;
-    
+
         return new Promise((resolve, reject) => {
-          db.all(sql, [currentUserId], (err, rows) => {
-            if (err) return reject(err);
-            resolve(rows);
-          });
+            db.all(sql, [currentUserId], (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
         });
-      }
-    
-
-
-
+    }
 }
 
 module.exports = BlogDao;

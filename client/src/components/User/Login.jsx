@@ -24,7 +24,7 @@ const Login = ({ setApiKey, setUserId }) => {
             localStorage.setItem('userId', userId);
 
             setMessage('Login successful!');
-            navigate('/dashboard');
+            navigate('/');
         } catch (error) {
             setMessage('Login failed: ' + (error.response?.data?.error || error.message));
         }

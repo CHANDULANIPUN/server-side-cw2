@@ -76,25 +76,6 @@ exports.deletePost = async (req, res) => {
     }
 };
 
-
-/*exports.getAllPosts = async (req, res) => {
-    try {
-        const currentUserId = Number(req.query.currentUserId);
-
-        const posts = await new Promise((resolve, reject) => {
-            BlogDao.getAllPosts(currentUserId, (err, posts) => {
-                if (err) return reject(err);
-                resolve(posts);
-            });
-        });
-
-        res.status(200).json(posts || []);
-    } catch (error) {
-        console.error('Error retrieving posts:', error);
-        res.status(500).json({ error: 'Failed to retrieve posts' });
-    }
-};*/
-
 exports.getPostsByUser = async (req, res) => {
     const username = req.params.username;
 

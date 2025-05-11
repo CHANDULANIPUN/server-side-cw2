@@ -5,7 +5,6 @@ import HomePage from './components/User/Home';
 import Register from './components/User/Register';
 import Login from './components/User/Login';
 import ApiKeyManager from './components/User/ApiKeyManager';
-import Dashboard from './components/User/Dashboard';
 import AdminLogin from './components/User/AdminLogin';
 import AdminDashboard from './components/User/AdminDashboard';
 import ProfilePage from './components/User/ProfilePage';
@@ -52,7 +51,7 @@ const App = () => {
                         path="/api-key-manager"
                         element={apiKey ? <ApiKeyManager apiKey={apiKey} /> : <p>Please log in to manage your API key.</p>}
                     />
-                    <Route path="/dashboard" element={<Dashboard />} />
+                    
                     <Route path="/adminlogin" element={<AdminLogin setApiKey={setApiKey} />} />
                     <Route path="/admin-dashboard" element={<AdminDashboard />} />
                     <Route path="/profile/:userId" element={<ProfileRouteWrapper loggedInUserId={userId} />} />
